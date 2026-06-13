@@ -68,6 +68,13 @@ export function EntryCard({ entry, index = 0 }: { entry: DiaryEntry; index?: num
                 &ldquo;{entry.special_memory}&rdquo;
               </p>
             )}
+
+            {entry.photos && entry.photos.length > 0 && (
+               <p className="text-xs text-[#9e7a60] mt-1.5 flex items-center gap-1">
+            📸 {entry.photos.length} photo{entry.photos.length !== 1 ? "s" : ""}
+             </p>
+            )}
+
           </div>
         </div>
       </Link>

@@ -244,24 +244,35 @@ export default function EntryDetailPage() {
         </motion.div>
       )}
 
-      {/* Photos */}
-      {entry.photos && entry.photos.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="diary-card p-5 mb-5"
+{/* Photos */}
+{entry.photos && entry.photos.length > 0 && (
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.3 }}
+    className="diary-card p-5 mb-5"
+  >
+    <h2 className="font-display font-semibold text-[#3d2b1f] mb-3">📸 Photos</h2>
+    <div className="grid grid-cols-3 gap-2">
+      {entry.photos.map(photo => (
+        <div
+          key={photo.id}
+          className="relative aspect-square rounded-lg overflow-hidden bg-[#f0e6d2] shadow-sm"
         >
-          <h2 className="font-display font-semibold text-[#3d2b1f] mb-3">📸 Photos</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {entry.photos.map(photo => (
-              <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-[#f0e6d2] shadow-sm">
-                <Image src={photo.url} alt={photo.label ?? "Photo"} fill className="object-cover" unoptimized />
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo.url}
+            alt={photo.label ?? "Photo"}
+            className="w-full h-full object-cover"
+            onError={e => {
+              (e.target as HTMLImageElement).src = "/placeholder-poster.svg";
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  </motion.div>
+)}
 
       {/* Actions */}
         <div className="flex gap-3 mt-6">

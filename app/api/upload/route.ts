@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       const ext = file.name.split(".").pop() ?? "jpg";
       const key = `photos/${entryId ?? "misc"}/${Date.now()}.${ext}`;
       await bucket.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
-      url = `https://pub-YOUR_R2_PUBLIC_URL.r2.dev/${key}`;
+      url = `https://pub-e1c9171c4bd943de82761aca95e4fedf.r2.dev/${key}`;
     } else {
       url = `https://picsum.photos/seed/${Date.now()}/400/600`;
     }
