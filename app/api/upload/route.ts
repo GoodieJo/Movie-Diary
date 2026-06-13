@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db-adapter";
+
 export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const file    = formData.get("file")     as File | null;
-  const entryId = formData.get("entry_id") as string | null;
-  const label   = formData.get("label")    as string | null;
+  const formData   = await request.formData();
+  const file       = formData.get("file")         as File | null;
+  const entryId    = formData.get("entry_id")     as string | null;
+  const label      = formData.get("label")        as string | null;
+  const existingUrl = formData.get("existing_url") as string | null;
+
+  // If we already have a URL (photo was pre-uploaded), just link it to entry
+  if (existingUrl && entryId) {
+    const db = await getDb();
+    if (db) {
+      await db.execute(
+        "INSERT INTO photos (entry_id, url, label) VALUES (?,?,?)",
+        [parseInt(entryId), existingUrl, label ?? null]
+      );
+    }
+    return NextResponse.json({ url: existingUrl });
+  }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-  // Try Cloudflare R2 first
   let url: string;
+
   try {
     const { getRequestContext } = await import("@cloudflare/next-on-pages");
     const ctx    = getRequestContext();
@@ -23,17 +37,14 @@ export async function POST(request: NextRequest) {
       const ext = file.name.split(".").pop() ?? "jpg";
       const key = `photos/${entryId ?? "misc"}/${Date.now()}.${ext}`;
       await bucket.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
-      url = `/api/photos/${key}`;
+      url = `https://pub-YOUR_R2_PUBLIC_URL.r2.dev/${key}`;
     } else {
-      // Local dev: use a stable picsum placeholder keyed by filename
-      url = `https://picsum.photos/seed/${encodeURIComponent(file.name)}/400/600`;
+      url = `https://picsum.photos/seed/${Date.now()}/400/600`;
     }
   } catch {
-    // Not in Cloudflare — local dev placeholder
     url = `https://picsum.photos/seed/${Date.now()}/400/600`;
   }
 
-  // Save photo record to DB
   if (entryId) {
     const db = await getDb();
     if (db) {

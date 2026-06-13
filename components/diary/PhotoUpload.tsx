@@ -1,53 +1,76 @@
 "use client";
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PhotoFile {
   id: string;
-  url: string;
-  file?: File;
+  previewUrl: string;
+  uploadedUrl?: string;
+  uploading: boolean;
   label?: string;
 }
 
 interface PhotoUploadProps {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   entryId?: number;
   onChange?: (urls: string[]) => void;
 }
 
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function PhotoUpload({ entryId: _entryId, onChange }: PhotoUploadProps) {
+export function PhotoUpload({ onChange }: PhotoUploadProps) {
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(files: FileList) {
-    const newPhotos: PhotoFile[] = [];
+    const newPhotos: PhotoFile[] = Array.from(files).slice(0, 6).map(file => ({
+      id: Math.random().toString(36).slice(2),
+      previewUrl: URL.createObjectURL(file),
+      uploading: true,
+    }));
 
-    for (const file of Array.from(files).slice(0, 6)) {
-      const url = URL.createObjectURL(file);
-      newPhotos.push({ id: Math.random().toString(36).slice(2), url, file });
+    setPhotos(prev => [...prev, ...newPhotos]);
+
+    // Upload each file immediately
+    for (const photo of newPhotos) {
+      const file = Array.from(files).find((_, i) =>
+        newPhotos[i]?.id === photo.id
+      ) ?? files[newPhotos.indexOf(photo)];
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res  = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json() as { url?: string };
+
+        setPhotos(prev => {
+          const updated = prev.map(p =>
+            p.id === photo.id
+              ? { ...p, uploadedUrl: data.url, uploading: false }
+              : p
+          );
+          onChange?.(updated.map(p => p.uploadedUrl).filter(Boolean) as string[]);
+          return updated;
+        });
+      } catch {
+        setPhotos(prev => prev.map(p =>
+          p.id === photo.id ? { ...p, uploading: false } : p
+        ));
+      }
     }
-
-    setPhotos(prev => {
-      const updated = [...prev, ...newPhotos];
-      onChange?.(updated.map(p => p.url));
-      return updated;
-    });
   }
 
   function remove(id: string) {
     setPhotos(prev => {
       const updated = prev.filter(p => p.id !== id);
-      onChange?.(updated.map(p => p.url));
+      onChange?.(updated.map(p => p.uploadedUrl).filter(Boolean) as string[]);
       return updated;
     });
   }
 
   return (
     <div className="space-y-3">
-      {/* Upload area */}
       <div
         onClick={() => inputRef.current?.click()}
         onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
@@ -67,15 +90,10 @@ export function PhotoUpload({ entryId: _entryId, onChange }: PhotoUploadProps) {
         />
       </div>
 
-      {/* Preview grid */}
       <AnimatePresence>
         {photos.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-3 gap-2"
-          >
-            {photos.map((photo) => (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-2">
+            {photos.map(photo => (
               <motion.div
                 key={photo.id}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -83,14 +101,17 @@ export function PhotoUpload({ entryId: _entryId, onChange }: PhotoUploadProps) {
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="relative aspect-square rounded-lg overflow-hidden bg-[#f0e6d2] group shadow-sm"
               >
-                <Image
-                  src={photo.url}
-                  alt="Upload preview"
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                <Image src={photo.previewUrl} alt="Upload preview" fill className="object-cover" unoptimized />
+                {photo.uploading && (
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <Loader2 size={20} className="text-white animate-spin" />
+                  </div>
+                )}
+                {!photo.uploading && !photo.uploadedUrl && (
+                  <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
+                    <p className="text-white text-xs">Failed</p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => remove(photo.id)}

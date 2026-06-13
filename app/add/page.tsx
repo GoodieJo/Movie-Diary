@@ -85,6 +85,7 @@ export default function AddEntryPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
 
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const { register, control, setValue, watch, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -111,8 +112,24 @@ export default function AddEntryPage() {
       }
 
       const { data: entry } = await res.json() as { data: { id: number } };
-      toast({ title: "Memory saved! 💕", description: `"${data.title}" added to your diary.` });
-      router.push(`/entries/${entry.id}`);
+
+// Save uploaded photos linked to this entry
+if (photoUrls.length > 0) {
+  await Promise.all(photoUrls.map(url =>
+    fetch("/api/upload", {
+      method: "POST",
+      body: (() => {
+        const fd = new FormData();
+        fd.append("entry_id", String(entry.id));
+        fd.append("existing_url", url);
+        return fd;
+      })(),
+    })
+  ));
+}
+
+toast({ title: "Memory saved! 💕", description: `"${data.title}" added to your diary.` });
+router.push(`/entries/${entry.id}`);
     } catch (e) {
       console.error("Save failed:", e);
       toast({ title: "Couldn't save", description: String(e), variant: "destructive" });
@@ -350,7 +367,7 @@ export default function AddEntryPage() {
             <div className="diary-card p-5 space-y-5">
               <h2 className="font-display text-xl font-semibold text-[#3d2b1f]">📸 Photos</h2>
               <p className="text-sm text-[#9e7a60]">Add couple selfies, snacks, tickets — whatever captures the night!</p>
-              <PhotoUpload />
+              <PhotoUpload onChange={setPhotoUrls} />
             </div>
 
             <div className="diary-card p-5 bg-[#fdf5e8]">
