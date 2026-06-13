@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchMovies } from "@/lib/tmdb";
+export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   const query = new URL(request.url).searchParams.get("q") ?? "";

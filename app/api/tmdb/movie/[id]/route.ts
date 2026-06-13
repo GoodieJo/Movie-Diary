@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMovieDetails } from "@/lib/tmdb";
+export const runtime = "edge";
 
 export async function GET(
   _req: NextRequest,

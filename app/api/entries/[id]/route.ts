@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db-adapter";
+export const runtime = "edge";
 
 export async function GET(
   _req: NextRequest,

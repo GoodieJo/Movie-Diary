@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db-adapter";
+export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
