@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db-adapter";
+
 export const runtime = "edge";
 
 const EntrySchema = z.object({
@@ -29,7 +30,9 @@ const EntrySchema = z.object({
 
 export async function GET(request: NextRequest) {
   const db = await getDb();
-  if (!db) return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  if (!db) {
+    return NextResponse.json({ items: [], total: 0, page: 1, pageSize: 20 });
+  }
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") ?? "";
@@ -43,9 +46,9 @@ export async function GET(request: NextRequest) {
   const conditions: string[] = ["1=1"];
   const params: unknown[]    = [];
 
-  if (search) { conditions.push("m.title LIKE ?");                         params.push(`%${search}%`); }
-  if (genre)  { conditions.push("m.genre = ?");                            params.push(genre); }
-  if (year)   { conditions.push("strftime('%Y', de.watched_date) = ?");    params.push(year); }
+  if (search) { conditions.push("m.title LIKE ?"); params.push(`%${search}%`); }
+  if (genre)  { conditions.push("m.genre = ?");    params.push(genre); }
+  if (year)   { conditions.push("strftime('%Y', de.watched_date) = ?"); params.push(year); }
 
   const where = conditions.join(" AND ");
   const orderMap: Record<string, string> = {
@@ -68,40 +71,56 @@ export async function GET(request: NextRequest) {
     ),
   ]);
 
-  // Attach photos
   if (entries.length > 0) {
     const ids = entries.map(e => e.id as number);
     const placeholders = ids.map(() => "?").join(",");
-    const photos = await db.query(`SELECT * FROM photos WHERE entry_id IN (${placeholders})`, ids);
+    const photos = await db.query(
+      `SELECT * FROM photos WHERE entry_id IN (${placeholders})`, ids
+    );
     const photoMap: Record<number, unknown[]> = {};
     for (const p of photos) {
       const eid = p.entry_id as number;
       if (!photoMap[eid]) photoMap[eid] = [];
       photoMap[eid].push(p);
     }
-    for (const e of entries) (e as Record<string, unknown>).photos = photoMap[e.id as number] ?? [];
+    for (const e of entries) {
+      (e as Record<string, unknown>).photos = photoMap[e.id as number] ?? [];
+    }
   }
 
-  return NextResponse.json({ items: entries, total: countRow?.cnt ?? 0, page, pageSize: limit });
+  return NextResponse.json({
+    items: entries,
+    total: countRow?.cnt ?? 0,
+    page,
+    pageSize: limit,
+  });
 }
 
 export async function POST(request: NextRequest) {
   const db = await getDb();
-  if (!db) return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  if (!db) {
+    return NextResponse.json(
+      { error: "Database not available. Check D1 binding in Cloudflare dashboard." },
+      { status: 503 }
+    );
+  }
 
   let body: unknown;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   const parsed = EntrySchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 422 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues }, { status: 422 });
+  }
 
   const d = parsed.data;
 
   try {
-    // Find or create movie
     let movieRow = d.tmdb_id
-      ? await db.queryFirst<{ id: number }>("SELECT id FROM movies WHERE tmdb_id = ?", [d.tmdb_id])
+      ? await db.queryFirst<{ id: number }>(
+          "SELECT id FROM movies WHERE tmdb_id = ?", [d.tmdb_id]
+        )
       : null;
 
     if (!movieRow) {
@@ -109,23 +128,26 @@ export async function POST(request: NextRequest) {
         "INSERT INTO movies (tmdb_id, title, poster_url, genre, runtime, overview) VALUES (?,?,?,?,?,?)",
         [d.tmdb_id ?? null, d.title, d.poster_url ?? null, d.genre ?? null, d.runtime ?? null, d.overview ?? null]
       );
-      movieRow = await db.queryFirst<{ id: number }>("SELECT id FROM movies WHERE title = ? ORDER BY id DESC LIMIT 1", [d.title]);
+      movieRow = await db.queryFirst<{ id: number }>(
+        "SELECT id FROM movies ORDER BY id DESC LIMIT 1"
+      );
     }
 
-    if (!movieRow) throw new Error("Failed to insert movie");
+    if (!movieRow) throw new Error("Failed to create movie record");
 
     await db.execute(
       `INSERT INTO diary_entries
-         (movie_id, watched_date, start_time, end_time, your_rating, partner_rating,
-          favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory,
-          special_memory, mood_before, mood_after, location, snacks)
+        (movie_id, watched_date, start_time, end_time, your_rating, partner_rating,
+         favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory,
+         special_memory, mood_before, mood_after, location, snacks)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         movieRow.id,
         d.watched_date, d.start_time ?? null, d.end_time ?? null,
         d.your_rating ?? null, d.partner_rating ?? null,
-        d.favorite_scene ?? null, d.favorite_character ?? null, d.best_quote ?? null,
-        d.laugh_memory ?? null, d.cry_memory ?? null, d.special_memory ?? null,
+        d.favorite_scene ?? null, d.favorite_character ?? null,
+        d.best_quote ?? null, d.laugh_memory ?? null,
+        d.cry_memory ?? null, d.special_memory ?? null,
         d.mood_before ?? null, d.mood_after ?? null,
         d.location ?? "Home", d.snacks ?? null,
       ]
@@ -139,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: entry }, { status: 201 });
   } catch (err) {
-    console.error(err);
+    console.error("[POST /api/entries]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

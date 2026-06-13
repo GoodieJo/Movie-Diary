@@ -6,11 +6,7 @@ import type { TMDbSearchResult, TMDbMovieDetails } from "@/types";
 const BASE = "https://api.themoviedb.org/3";
 
 function apiKey(): string {
-  return (
-    process.env.NEXT_PUBLIC_TMDB_API_KEY ||
-    process.env.TMDB_API_KEY ||
-    ""
-  );
+  return process.env.NEXT_PUBLIC_TMDB_API_KEY ?? "";
 }
 
 export async function searchMovies(query: string): Promise<TMDbSearchResult[]> {

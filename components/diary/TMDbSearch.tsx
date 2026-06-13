@@ -157,11 +157,6 @@ export function TMDbSearch({ onSelect, initialTitle = "" }: TMDbSearchProps) {
         )}
       </AnimatePresence>
 
-      {!process.env.NEXT_PUBLIC_TMDB_API_KEY && (
-        <p className="text-xs text-amber-600 mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-          ⚠️ Set NEXT_PUBLIC_TMDB_API_KEY in .env.local to enable movie search
-        </p>
-      )}
     </div>
   );
 }

@@ -125,8 +125,13 @@ export default function AddEntryPage() {
       const { data: entry } = await res.json() as { data: { id: number } };
       toast({ title: "Memory saved! 💕", description: `"${data.title}" added to your diary.` });
       router.push(`/entries/${entry.id}`);
-    } catch (e) {
-      toast({ title: "Couldn't save", description: String(e), variant: "destructive" });
+      } catch (e) {
+      console.error("Save failed:", e);
+      toast({
+        title: "Couldn't save",
+        description: String(e),
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
