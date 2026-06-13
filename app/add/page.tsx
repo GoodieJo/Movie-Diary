@@ -20,10 +20,14 @@ import type { MoodBefore, MoodAfter } from "@/types";
 const schema = z.object({
   title: z.string().min(1, "Movie title is required"),
   watched_date: z.string().min(1, "Date is required"),
-  tmdb_id: z.number().optional(),
+  tmdb_id: z.preprocess(
+  (val) => (val === null || val === "" ? undefined : val),
+  z.number().optional()),
   poster_url: z.string().optional(),
   genre: z.string().optional(),
-  runtime: z.number().optional(),
+  runtime: z.preprocess(
+  (val) => (val === null || val === "" ? undefined : val),
+  z.number().optional()),
   overview: z.string().optional(),
   start_time: z.string().optional(),
   end_time: z.string().optional(),

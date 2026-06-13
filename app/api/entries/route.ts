@@ -5,17 +5,17 @@ import { getDb } from "@/lib/db-adapter";
 export const runtime = "edge";
 
 const EntrySchema = z.object({
-  tmdb_id:            z.number().optional(),
+  tmdb_id:       z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
   title:              z.string().min(1),
   poster_url:         z.string().optional(),
   genre:              z.string().optional(),
-  runtime:            z.number().optional(),
+  runtime:       z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
   overview:           z.string().optional(),
   watched_date:       z.string().min(1),
   start_time:         z.string().optional(),
   end_time:           z.string().optional(),
-  your_rating:        z.number().min(1).max(5).optional(),
-  partner_rating:     z.number().min(1).max(5).optional(),
+  your_rating:   z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(5).optional()),
+  partner_rating:z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(5).optional()),
   favorite_scene:     z.string().optional(),
   favorite_character: z.string().optional(),
   best_quote:         z.string().optional(),
