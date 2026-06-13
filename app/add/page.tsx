@@ -168,7 +168,9 @@ export default function AddEntryPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, (errors) => {
+  console.error("Form validation errors:", errors);
+  toast({ title: "Please check the form", description: Object.keys(errors).join(", "), variant: "destructive" }); })}>
         <AnimatePresence mode="wait">
           {/* STEP 0 - Movie Details */}
           {step === 0 && (
@@ -404,14 +406,25 @@ export default function AddEntryPage() {
               Continue <ChevronRight size={16} />
             </button>
           ) : (
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-400 hover:bg-rose-500 text-white rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-70"
-            >
-              <Save size={16} />
-              {submitting ? "Saving…" : "Save Memory 💕"}
-            </button>
+<button
+  type="button"
+  onClick={async () => {
+    const res = await fetch("/api/entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Test Movie",
+        watched_date: "2024-01-01",
+        location: "Home",
+      }),
+    });
+    const data = await res.json();
+    console.log("Direct API test:", res.status, data);
+  }}
+  className="text-xs text-[#9e7a60] underline mt-2"
+>
+  Test API directly
+</button>
           )}
         </div>
       </form>
