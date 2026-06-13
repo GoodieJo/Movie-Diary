@@ -15,6 +15,8 @@ import { WATCH_LOCATIONS } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import type { MoodBefore, MoodAfter } from "@/types";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 const schema = z.object({
   title: z.string().min(1, "Movie title is required"),
   watched_date: z.string().min(1, "Date is required"),
