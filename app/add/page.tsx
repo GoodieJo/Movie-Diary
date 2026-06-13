@@ -87,12 +87,13 @@ export default function AddEntryPage() {
   const [, setSubmitting] = useState(false);
   const [posterPreview, setPosterPreview] = useState<string>("");
 
-  const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, control, handleSubmit, setValue, watch, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      watched_date: new Date().toISOString().split("T")[0],
-      location: "Home",
-    },
+defaultValues: {
+  title: "",
+  watched_date: new Date().toISOString().split("T")[0],
+  location: "Home",
+},
   });
 
   const watchedTitle = watch("title");
@@ -399,35 +400,26 @@ export default function AddEntryPage() {
           </button>
 
           {step < STEPS.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => canNext && setStep(s => s + 1)}
-              disabled={!canNext}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-400 hover:bg-rose-500 text-white rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue <ChevronRight size={16} />
-            </button>
-          ) : (
-<button
-  type="button"
-  onClick={async () => {
-    const res = await fetch("/api/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: "Test Movie",
-        watched_date: "2024-01-01",
-        location: "Home",
-      }),
-    });
-    const data = await res.json();
-    console.log("Direct API test:", res.status, data);
-  }}
-  className="text-xs text-[#9e7a60] underline mt-2"
->
-  Test API directly
-</button>
-          )}
+  <button
+    type="button"
+    onClick={() => canNext && setStep(s => s + 1)}
+    disabled={!canNext}
+    className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-400 hover:bg-rose-500 text-white rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+  >
+    Continue <ChevronRight size={16} />
+  </button>
+) : (
+  <button
+    type="button"
+    onClick={() => {
+      const values = getValues();
+      onSubmit(values as FormData);
+    }}
+    className="flex items-center gap-1.5 px-5 py-2.5 bg-rose-400 hover:bg-rose-500 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+  >
+    💕 Save Memory
+  </button>
+)}
         </div>
       </form>
     </div>
