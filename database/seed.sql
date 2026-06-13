@@ -1,0 +1,44 @@
+-- Seed data for Movie Diary
+-- 10 realistic movie entries with memories
+
+INSERT INTO movies (tmdb_id, title, poster_url, genre, runtime, overview) VALUES
+(157336, 'Interstellar', 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', 'Science Fiction', 169, 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity''s survival.'),
+(11216,  'Cinema Paradiso', 'https://image.tmdb.org/t/p/w500/gCI2AeMV4IHSewhJkzsur2QWoFB.jpg', 'Drama', 155, 'A filmmaker recalls his childhood, when he fell in love with the movies at his village''s cinema.'),
+(597,    'Titanic', 'https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg', 'Romance', 195, 'A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.'),
+(76341,  'Mad Max: Fury Road', 'https://image.tmdb.org/t/p/w500/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg', 'Action', 120, 'In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland.'),
+(13,     'Forrest Gump', 'https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg', 'Drama', 142, 'The presidencies of Kennedy and Johnson, Vietnam, Watergate, and other historical events unfold through the perspective of an Alabama man.'),
+(637,    'Life is Beautiful', 'https://image.tmdb.org/t/p/w500/74hLDKjD5aGYOotO6esUVaeISa2.jpg', 'Drama', 116, 'A Jewish man has a wonderful romance with the help of his humor, but must use those same skills to protect his son in a Nazi death camp.'),
+(105,    'Back to the Future', 'https://image.tmdb.org/t/p/w500/fNOH9f1aA7XRTzl1sAOx9iF553Q.jpg', 'Science Fiction', 116, 'Marty McFly, a 17-year-old high school student, is accidentally sent thirty years into the past in a time-traveling DeLorean.'),
+(140607, 'The Force Awakens', 'https://image.tmdb.org/t/p/w500/wqnLdwVXoBjKibFRR5U3y0aDUhs.jpg', 'Action', 138, 'Three decades after the Empire''s defeat, a new threat arises in the militant First Order.'),
+(9806,   'The Incredibles', 'https://image.tmdb.org/t/p/w500/2LqaLgk4Z226KkgPJuiOQ58ShKD.jpg', 'Animation', 115, 'A family of undercover superheroes, while trying to live the quiet suburban life, are forced into action to save the world.'),
+(872585, 'Oppenheimer', 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', 'Drama', 180, 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(1, '2024-02-14', '20:00', '22:49', 5, 5, 'The docking scene where time moves differently on the ship', 'TARS', 'We used to look up at the sky and wonder at our place in the stars', 'When TARS kept giving 90% honesty answers', 'The cornfield scene at the end when he finds the messages from Murph', 'You held my hand so tight during the wormhole scene. We stayed up until 2am talking about time and space. Best Valentine''s Day ever.', 'Excited', 'Emotional', 'Home', 'Popcorn with truffle salt, red wine');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(2, '2024-03-08', '19:30', '22:05', 5, 4, 'The final montage of all the cut kissing scenes', 'Alfredo', 'Whatever you end up doing, love it', 'When Toto kept sneaking into the projection booth', 'The final scene — we were both absolutely wrecked', 'We watched this on a rainy Sunday. By the end we were both crying and ordering takeout and promising to never forget our dreams.', 'Relaxed', 'Emotional', 'Home', 'Pasta, tiramisu');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(3, '2023-12-25', '21:00', '00:15', 5, 5, 'The drawing scene on the ship', 'Jack', 'I''m the king of the world!', 'When you yelled at Jack to just get on the door', 'The ending. Every time.', 'Christmas night. You fell asleep during the first half and then absolutely sobbed during the ending. I will never let you forget this.', 'Happy', 'Emotional', 'Home', 'Hot chocolate, Christmas cookies');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(4, '2024-04-20', '15:00', '16:50', 4, 5, 'The guitar riff scene on the war rig', 'Furiosa', 'Who killed the world?', 'The flamethrower guitarist — we kept rewinding', NULL, 'Watched this on a lazy Saturday afternoon. You were convinced it would be terrible. You are now obsessed with Furiosa.', 'Tired', 'Inspired', 'Home', 'Nachos, craft beer');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(5, '2023-11-11', '18:00', '20:22', 5, 5, 'Run Forrest Run!', 'Forrest Gump', 'Life is like a box of chocolates', 'Every single Jenny moment where Forrest is oblivious', 'When Bubba dies. And when Jenny dies.', 'Our first movie together at your apartment. You made dinner. I spilled wine on the couch. We pretended it was chocolate.', 'Happy', 'Loved It', 'Home', 'Homemade pasta, spilled red wine (whoops)');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(6, '2024-01-20', '20:30', '22:26', 5, 5, 'Guido teaching Joshua that everything is a game', 'Guido', 'Buon giorno, Principessa!', 'Guido narrating everything as a competition', 'The ending. The tank. The little boy looking for his mother.', 'We could barely speak afterwards. Just held each other for a long time. Some movies change you.', 'Relaxed', 'Emotional', 'Home', 'Italian wine, bruschetta');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(7, '2024-05-04', '14:00', '15:56', 4, 4, 'The clock tower lightning scene', 'Doc Brown', 'Great Scott!', 'Every time Marty plays guitar too hard', NULL, 'May the Fourth! We watched this and called it sci-fi. You argued it counts. I still disagree. Either way, perfect afternoon.', 'Happy', 'Happy', 'Home', 'Pepsi (very on theme), microwave popcorn');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(8, '2024-06-15', '20:00', '22:18', 4, 3, 'The Millennium Falcon escape from Jakku', 'Rey', 'Chewie, we''re home', 'BB-8 giving a thumbs up', NULL, 'You hadn''t seen it yet and I had to watch your face the whole time. Worth it just for when Han Solo showed up.', 'Excited', 'Loved It', 'Cinema', 'Cinema popcorn, Coke, Maltesers');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(9, '2024-07-28', '11:00', '12:55', 5, 5, 'The superhero landing montage', 'Edna Mode', 'No capes!', 'Every single Edna scene, especially the cape speech', 'When Bob thinks his family is gone', 'Rainy Sunday morning. Still in pajamas. Still one of the best animated films ever made. Edna is our spirit animal.', 'Relaxed', 'Loved It', 'Home', 'Pancakes in bed, orange juice');
+
+INSERT INTO diary_entries (movie_id, watched_date, start_time, end_time, your_rating, partner_rating, favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory, special_memory, mood_before, mood_after, location, snacks) VALUES
+(10, '2024-08-10', '20:30', '23:30', 4, 4, 'The Trinity test sequence', 'Oppenheimer', 'Now I am become Death, the destroyer of worlds', 'The scene where everyone is waiting for the blast wave', 'The final conversation with Einstein', 'We went to the cinema for this one and argued about it for two hours over dinner afterwards. Best date night in months.', 'Excited', 'Inspired', 'Cinema', 'Cinema popcorn, sparkling water, pretzel bites');

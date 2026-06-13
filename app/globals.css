@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&family=Dancing+Script:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.75rem;
+  --cream:     #fdf8ec;
+  --parchment: #f8f3e8;
+  --ink:       #3d2b1f;
+  --rose-soft: #fda4af;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--parchment);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  color: var(--ink);
+  font-family: 'Lato', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Diary card base */
+.diary-card {
+  background: #fffdf7;
+  border: 1px solid #e8dcc8;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(61,43,31,0.08), 0 1px 3px rgba(61,43,31,0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.diary-card:hover {
+  box-shadow: 0 8px 30px rgba(61,43,31,0.14), 0 3px 8px rgba(61,43,31,0.08);
+  transform: translateY(-2px);
+}
+
+/* Paper fold effect top-right corner */
+.diary-card.folded::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 24px; height: 24px;
+  background: linear-gradient(225deg, #f0e6d2 50%, transparent 50%);
+  border-radius: 0 12px 0 0;
+}
+
+/* Star rating */
+.stars { color: #e3a857; letter-spacing: 1px; }
+.stars-empty { color: #d4c4aa; }
+
+/* Handwriting style text */
+.handwriting { font-family: 'Dancing Script', cursive; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f5ede4; }
+::-webkit-scrollbar-thumb { background: #c99f7f; border-radius: 3px; }
+
+/* Page transitions */
+.page-enter { opacity: 0; transform: translateY(12px); }
+.page-enter-active { opacity: 1; transform: translateY(0); transition: all 0.35s ease; }
+
+/* Floating hearts animation */
+@keyframes floatUp {
+  0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-80px) scale(1.1) rotate(15deg); }
+}
+.heart-float { animation: floatUp 3s ease-in-out infinite; }
+
+/* Line-ruled diary paper */
+.diary-lines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #e8dcc880 27px,
+    #e8dcc880 28px
+  );
+  background-size: 100% 28px;
+}
+
+/* Washi tape decorations */
+.washi {
+  position: relative;
+}
+.washi::before {
+  content: '';
+  position: absolute;
+  top: -6px; left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 60px; height: 18px;
+  background: rgba(253, 164, 175, 0.55);
+  border-radius: 2px;
+}
+
+/* Badge card */
+.badge-card {
+  background: linear-gradient(135deg, #fff8f0 0%, #fdf0f5 100%);
+  border: 1.5px solid #f5d0d8;
+  border-radius: 16px;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  transition: transform 0.2s;
+}
+.badge-card:hover { transform: scale(1.04); }
+.badge-card.locked { opacity: 0.45; filter: grayscale(0.6); }

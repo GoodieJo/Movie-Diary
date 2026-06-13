@@ -1,0 +1,23 @@
+name = "movie-diary"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".next"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "movie-diary-db"
+database_id = "68a7ec13-8d1d-4322-8b4e-79fb2543d64d"
+migrations_dir = "database/migrations"
+
+[[r2_buckets]]
+binding = "PHOTOS_BUCKET"
+bucket_name = "movie-diary-photos"
+
+[vars]
+# Add your TMDb API key here for Workers environment
+NEXT_PUBLIC_TMDB_API_KEY = ""
+
+# Local dev overrides (used by `wrangler pages dev`)
+[dev]
+port = 3000
+local_protocol = "http"
