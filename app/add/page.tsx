@@ -6,7 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Save, Film, Heart, Camera, Smile } from "lucide-react";
+import { ChevronLeft, ChevronRight, Film, Heart, Camera, Smile } from "lucide-react";
 import { TMDbSearch } from "@/components/diary/TMDbSearch";
 import { StarRating } from "@/components/diary/StarRating";
 import { MoodBeforePicker, MoodAfterPicker } from "@/components/diary/MoodPicker";
@@ -82,7 +82,7 @@ function Textarea({ className = "", ...props }: React.TextareaHTMLAttributes<HTM
 export default function AddEntryPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [, setSubmitting] = useState(false);
   const [posterPreview, setPosterPreview] = useState<string>("");
 
   const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
