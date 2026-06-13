@@ -172,7 +172,7 @@ export default function HomePage() {
         transition={{ delay: 1.1 }}
         className="flex flex-wrap justify-center gap-2 mt-8 max-w-md"
       >
-        {["TMDb auto-fill", "Mood tracking", "Memory notes", "Photo uploads", "Timeline", "Achievements"].map(f => (
+        {["Full of Cuteness 💖", "Filled with Love ❤️", "Sweet Memories 📖", "Shared Feelings 🌙", "Milestones Together ✨", "Our Story 🎞️"].map(f => (
           <span key={f} className="text-xs bg-white/70 border border-[#e8dcc8] px-3 py-1 rounded-full text-[#7a5c47]">
             {f}
           </span>
