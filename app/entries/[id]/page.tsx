@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Trash2, Edit } from "lucide-react";
 import type { DiaryEntry } from "@/types";
 import { formatDate, moodEmoji, locationEmoji } from "@/lib/utils";
 import { AverageRating, StarRating } from "@/components/diary/StarRating";
@@ -264,16 +264,25 @@ export default function EntryDetailPage() {
       )}
 
       {/* Actions */}
-      <div className="flex gap-3 mt-6">
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm border border-red-200 transition-colors"
-        >
-          <Trash2 size={14} />
-          {deleting ? "Deleting…" : "Delete"}
-        </button>
-      </div>
+        <div className="flex gap-3 mt-6">
+                  <Link
+                        href={`/entries/${id}/edit`}
+                       className="flex items-center gap-1.5 px-4 py-2.5 bg-[#f5ede4] hover:bg-[#ead8c8] text-[#3d2b1f] rounded-xl text-sm border border-[#e8dcc8] transition-colors"
+                       >
+                   <Edit size={14} />
+                         Edit
+                       </Link>
+                   <button
+                           onClick={handleDelete}
+                          disabled={deleting}
+                         className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-sm border border-red-200 transition-colors"
+                         >
+                          <Trash2 size={14} />
+                          {deleting ? "Deleting…" : "Delete"}
+                         </button>
+                    </div>
+
+
     </div>
   );
 }
