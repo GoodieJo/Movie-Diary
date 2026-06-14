@@ -11,15 +11,20 @@ export async function POST(request: NextRequest) {
   const existingUrl = formData.get("existing_url") as string | null;
 
   // If we already have a URL (photo was pre-uploaded), just link it to entry
-  if (existingUrl && entryId) {
+if (existingUrl && entryId) {
     const db = await getDb();
+    let photoId: number | undefined;
     if (db) {
       await db.execute(
         "INSERT INTO photos (entry_id, url, label) VALUES (?,?,?)",
         [parseInt(entryId), existingUrl, label ?? null]
       );
+      const row = await db.queryFirst<{ id: number }>(
+        "SELECT id FROM photos ORDER BY id DESC LIMIT 1"
+      );
+      photoId = row?.id;
     }
-    return NextResponse.json({ url: existingUrl });
+    return NextResponse.json({ url: existingUrl, id: photoId });
   }
 
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
