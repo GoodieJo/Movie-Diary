@@ -9,6 +9,8 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { StarRating } from "@/components/diary/StarRating";
 import { MoodBeforePicker, MoodAfterPicker } from "@/components/diary/MoodPicker";
+import { PhotoGrid } from "@/components/diary/PhotoGrid";
+import { PhotoUpload } from "@/components/diary/PhotoUpload";
 import { WATCH_LOCATIONS } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import type { DiaryEntry, MoodBefore, MoodAfter } from "@/types";
@@ -46,6 +48,7 @@ export default function EditEntryPage() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
   const [entry, setEntry]     = useState<DiaryEntry | null>(null);
+  const [photos, setPhotos]   = useState<{ id: number; url: string; label?: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
 
@@ -57,6 +60,7 @@ export default function EditEntryPage() {
       .then(r => r.json() as Promise<{ data: DiaryEntry }>)
       .then(d => {
         setEntry(d.data);
+        setPhotos(d.data.photos ?? []);
         reset({
           watched_date:       d.data.watched_date ?? "",
           start_time:         d.data.start_time ?? "",
@@ -90,7 +94,11 @@ export default function EditEntryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error("Save error:", errData);
+        throw new Error("Failed to save");
+      }
       toast({ title: "Saved! 💕", description: "Your memory has been updated." });
       router.push(`/entries/${id}`);
     } catch (e) {
@@ -98,6 +106,11 @@ export default function EditEntryPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDeletePhoto(photoId: number) {
+    await fetch(`/api/photos/${photoId}`, { method: "DELETE" });
+    setPhotos(prev => prev.filter(p => p.id !== photoId));
   }
 
   const watchedPoster = watch("poster_url");
@@ -131,7 +144,7 @@ export default function EditEntryPage() {
         <p className="handwriting text-rose-400 text-lg mt-1">{entry.title} ✏️</p>
       </motion.div>
 
-      {/* Movie info (read-only) */}
+      {/* Movie info */}
       <div className="diary-card p-5 space-y-4">
         <h2 className="font-display font-semibold text-[#3d2b1f]">🎬 Movie Info</h2>
 
@@ -275,6 +288,20 @@ export default function EditEntryPage() {
           render={({ field }) => (
             <MoodAfterPicker value={field.value as MoodAfter} onChange={field.onChange} />
           )}
+        />
+      </div>
+
+      {/* Photos */}
+      <div className="diary-card p-5 space-y-4">
+        <h2 className="font-display font-semibold text-[#3d2b1f]">📸 Photos</h2>
+
+        {photos.length > 0 && (
+          <PhotoGrid photos={photos} onDelete={handleDeletePhoto} />
+        )}
+
+        <PhotoUpload
+          entryId={Number(id)}
+          onUploaded={(photo) => setPhotos(prev => [...prev, photo])}
         />
       </div>
 

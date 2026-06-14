@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { PhotoGrid } from "@/components/diary/PhotoGrid";
 import { ArrowLeft, Clock, Trash2, Edit } from "lucide-react";
 import type { DiaryEntry } from "@/types";
 import { formatDate, moodEmoji, locationEmoji } from "@/lib/utils";
@@ -253,24 +254,7 @@ export default function EntryDetailPage() {
     className="diary-card p-5 mb-5"
   >
     <h2 className="font-display font-semibold text-[#3d2b1f] mb-3">📸 Photos</h2>
-    <div className="grid grid-cols-3 gap-2">
-      {entry.photos.map(photo => (
-        <div
-          key={photo.id}
-          className="relative aspect-square rounded-lg overflow-hidden bg-[#f0e6d2] shadow-sm"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photo.url}
-            alt={photo.label ?? "Photo"}
-            className="w-full h-full object-cover"
-            onError={e => {
-              (e.target as HTMLImageElement).src = "/placeholder-poster.svg";
-            }}
-          />
-        </div>
-      ))}
-    </div>
+    <PhotoGrid photos={entry.photos} />
   </motion.div>
 )}
 

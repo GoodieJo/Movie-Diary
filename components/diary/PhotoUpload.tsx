@@ -13,12 +13,12 @@ interface PhotoFile {
 }
 
 interface PhotoUploadProps {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   entryId?: number;
   onChange?: (urls: string[]) => void;
+  onUploaded?: (photo: { id: number; url: string }) => void;
 }
 
-export function PhotoUpload({ onChange }: PhotoUploadProps) {
+export function PhotoUpload({ entryId, onChange, onUploaded }: PhotoUploadProps) {
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,12 +37,13 @@ export function PhotoUpload({ onChange }: PhotoUploadProps) {
         newPhotos[i]?.id === photo.id
       ) ?? files[newPhotos.indexOf(photo)];
 
-      try {
+try {
         const formData = new FormData();
         formData.append("file", file);
+        if (entryId) formData.append("entry_id", String(entryId));
 
         const res  = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json() as { url?: string };
+        const data = await res.json() as { url?: string; id?: number };
 
         setPhotos(prev => {
           const updated = prev.map(p =>
@@ -53,6 +54,8 @@ export function PhotoUpload({ onChange }: PhotoUploadProps) {
           onChange?.(updated.map(p => p.uploadedUrl).filter(Boolean) as string[]);
           return updated;
         });
+
+        if (data.url && data.id) onUploaded?.({ id: data.id, url: data.url });
       } catch {
         setPhotos(prev => prev.map(p =>
           p.id === photo.id ? { ...p, uploading: false } : p

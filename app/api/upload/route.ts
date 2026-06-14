@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
     url = `https://picsum.photos/seed/${Date.now()}/400/600`;
   }
 
+let photoId: number | undefined;
+
   if (entryId) {
     const db = await getDb();
     if (db) {
@@ -52,8 +54,12 @@ export async function POST(request: NextRequest) {
         "INSERT INTO photos (entry_id, url, label) VALUES (?,?,?)",
         [parseInt(entryId), url, label ?? null]
       );
+      const row = await db.queryFirst<{ id: number }>(
+        "SELECT id FROM photos ORDER BY id DESC LIMIT 1"
+      );
+      photoId = row?.id;
     }
   }
 
-  return NextResponse.json({ url });
+  return NextResponse.json({ url, id: photoId });
 }
