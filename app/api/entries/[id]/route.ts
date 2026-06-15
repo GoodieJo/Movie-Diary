@@ -12,7 +12,7 @@ const numOrUndefined = z.preprocess((v) => {
 const ratingOrUndefined = z.preprocess((v) => {
   if (v === null || v === "" || v === undefined) return undefined;
   return typeof v === "string" ? Number(v) : v;
-}, z.number().min(1).max(5).optional());
+}, z.number().min(1).max(10).optional());
 
 export async function GET(
   _req: NextRequest,

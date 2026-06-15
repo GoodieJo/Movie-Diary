@@ -7,16 +7,17 @@ interface StarRatingProps {
   onChange?: (v: number) => void;
   readonly?: boolean;
   size?: "sm" | "md" | "lg";
+  max?: number;
 }
 
-export function StarRating({ value = 0, onChange, readonly = false, size = "md" }: StarRatingProps) {
+export function StarRating({ value = 0, onChange, readonly = false, size = "md", max = 10 }: StarRatingProps) {
   const [hovered, setHovered] = useState(0);
 
-  const sizes = { sm: "text-base", md: "text-2xl", lg: "text-3xl" };
+  const sizes = { sm: "text-sm", md: "text-xl", lg: "text-2xl" };
 
   return (
-    <div className={cn("flex gap-0.5", readonly ? "" : "cursor-pointer")}>
-      {[1, 2, 3, 4, 5].map((star) => {
+    <div className={cn("flex gap-0.5 flex-wrap", readonly ? "" : "cursor-pointer")}>
+      {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
         const filled = star <= (readonly ? value : (hovered || value));
         return (
           <span
@@ -35,16 +36,16 @@ export function StarRating({ value = 0, onChange, readonly = false, size = "md" 
   );
 }
 
-export function AverageRating({ your, partner }: { your?: number | null; partner?: number | null }) {
+export function AverageRating({ your, partner, max = 10 }: { your?: number | null; partner?: number | null; max?: number }) {
   if (!your && !partner) return null;
   const avg = your && partner ? (your + partner) / 2 : (your ?? partner ?? 0);
   return (
     <div className="flex items-center gap-2 text-sm">
-      <StarRating value={Math.round(avg)} readonly size="sm" />
-      <span className="text-[#9e7a60] font-medium">{avg.toFixed(1)}</span>
+      <span className="text-amber-500 font-semibold">{avg.toFixed(1)}</span>
+      <span className="text-[#9e7a60]">/ {max}</span>
       {your && partner && (
         <span className="text-xs text-[#b8a090]">
-          (You: {your}★ · Partner: {partner}★)
+          (You: {your} · Partner: {partner})
         </span>
       )}
     </div>

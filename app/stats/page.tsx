@@ -82,10 +82,10 @@ export default function StatsPage() {
     );
   }
 
-  const ratingsDist = [1,2,3,4,5].map(s => ({
-    stars: `${"★".repeat(s)}`,
-    count: (stats.ratings_distribution ?? []).find(r => r.stars === s)?.count ?? 0,
-  }));
+const ratingsDist = Array.from({ length: 10 }, (_, i) => i + 1).map(s => ({
+  stars: String(s),
+  count: (stats.ratings_distribution ?? []).find(r => r.stars === s)?.count ?? 0,
+}));
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
@@ -97,8 +97,8 @@ export default function StatsPage() {
       {/* Top stats grid */}
       <div className="grid grid-cols-2 gap-4">
         <StatCard icon={Film}     label="Total Movies"     value={stats.total_movies}      color="rose" />
-        <StatCard icon={Star}     label="Average Rating"   value={`${stats.avg_rating}/5`} color="amber"
-          sub={stats.avg_rating >= 4 ? "You love movies! 💕" : ""} />
+        <StatCard icon={Star}     label="Average Rating"   value={`${stats.avg_rating}/10`} color="amber"
+              sub={stats.avg_rating >= 8 ? "You love movies! 💕" : ""} />
         <StatCard icon={Calendar} label="This Year"        value={stats.movies_this_year}  color="warm"
           sub="films watched" />
         <StatCard icon={TrendingUp} label="This Month"     value={stats.movies_this_month} color="warm"
@@ -180,11 +180,11 @@ export default function StatsPage() {
               <Tooltip
                 contentStyle={{ background: "#fffdf7", border: "1px solid #e8dcc8", borderRadius: 10, fontSize: 12 }}
               />
-              <Bar dataKey="count" radius={[6,6,0,0]} name="Movies">
-                {ratingsDist.map((_, i) => (
-                  <Cell key={i} fill={["#f5d0d8","#fda4af","#fb7185","#f43f5e","#e3a857"][i]} />
-                ))}
-              </Bar>
+                  <Bar dataKey="count" radius={[6,6,0,0]} name="Movies">
+                       {ratingsDist.map((_, i) => (
+                      <Cell key={i} fill={`hsl(${350 - i * 10}, 70%, ${65 - i * 2}%)`} />
+                     ))}
+                  </Bar>
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
