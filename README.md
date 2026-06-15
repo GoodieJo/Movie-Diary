@@ -1,25 +1,110 @@
 # 🎬 Movie Diary
 
-> Every movie. Every memory. Every date.
+> Our story, one movie at a time.
 
-A romantic digital diary for two people to save memories of movies they watched together. Built with Next.js 15, Cloudflare D1, and the TMDb API.
+A private, password-protected digital diary for two people to record memories of movies they've watched together. Built with Next.js 15, deployed on Cloudflare Pages, backed by D1 (SQLite) and R2 (photo storage).
 
 ---
 
 ## ✨ Features
 
-- **TMDb auto-fill** — search any movie and poster, genre, runtime & overview fill automatically
-- **5-step diary form** — movie details → ratings → memories → mood → photos
-- **Scrapbook UI** — warm parchment aesthetic, handwriting font, floating hearts
-- **Timeline** — browse entries grouped by year and month
-- **Statistics** — charts for genre, monthly activity, rating distribution
-- **Achievements** — unlock badges as you watch more movies together
-- **Random memory** — "Surprise me" opens a random past entry
-- **Full REST API** — Cloudflare Workers + D1 + R2
+- **🔒 Private diary cover** — a beautiful animated lock screen with floating particles, a daily quote, and a password-protected diary book. Only people who know the secret can enter.
+- **📝 5-step entry form** — movie details, ratings, memories, mood, and photos
+- **⭐ 10-point rating system** — rate together out of 10, with average shown automatically
+- **🖼️ Manual poster & photo support** — paste any poster image URL; upload couple selfies, snacks, tickets, and more (stored in Cloudflare R2)
+- **✏️ Full edit support** — update any field of an entry after saving, including poster, ratings, memories, mood, and photos (add/remove)
+- **📚 Scrapbook-style browsing** — search, filter by genre/year, sort by date or rating
+- **📅 Timeline view** — entries grouped by year and month
+- **📊 Statistics dashboard** — total movies, genre breakdown, monthly activity, rating distribution, achievements/badges
+- **🎲 Random memory** — "Surprise Me" opens a random past entry
+- **🌸 Cozy scrapbook aesthetic** — cream/rose palette, handwriting fonts, paper textures, smooth Framer Motion animations
+- **📱 Fully responsive** — works great on mobile, tablet, and desktop
 
 ---
 
-## 🚀 Quick Start
+## 🧱 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 15 (App Router, TypeScript) |
+| Styling | Tailwind CSS, custom scrapbook theme |
+| Animation | Framer Motion |
+| Forms | React Hook Form + Zod |
+| State | Zustand |
+| Charts | Recharts |
+| Database | Cloudflare D1 (SQLite) — with local SQLite fallback via `@libsql/client` for dev |
+| File storage | Cloudflare R2 |
+| Hosting | Cloudflare Pages (Edge Runtime) |
+| Auth | Custom password gate — PBKDF2-SHA256 (Web Crypto API), HttpOnly session cookie |
+
+---
+
+## 🔐 Authentication Model
+
+This is **not** a multi-user login system — it's a single shared secret for two people.
+
+- The diary password is **never stored in plaintext** anywhere, including code, env files, or the database.
+- A **PBKDF2-SHA256 hash** (100,000 iterations) of the password is stored as `DIARY_PASSWORD_HASH`.
+- On successful login, a **deterministic session token** (SHA-256 derived from the hash) is set as an `HttpOnly`, `Secure`, `SameSite=Strict` cookie, valid for 30 days.
+- `middleware.ts` protects every route except the cover page (`/`) and the login/logout API routes — unauthenticated visitors are redirected to the cover.
+
+---
+
+## 📁 Project Structure
+
+```
+movie-diary/
+├── middleware.ts             # Route protection (must stay at project root)
+├── lib/
+│   ├── auth.ts                # Password hashing & session verification (Web Crypto)
+│   ├── db-adapter.ts          # D1 (edge) + local SQLite (dev) adapter
+│   └── utils.ts                # Date formatting, mood/location emoji helpers
+├── app/
+│   ├── page.tsx                # 🔒 Diary cover / password gate
+│   ├── home/page.tsx           # Diary home (Add / Browse / Stats / Surprise Me)
+│   ├── add/page.tsx            # 5-step "new entry" form
+│   ├── entries/
+│   │   ├── page.tsx             # Browse diary (search/filter/sort)
+│   │   └── [id]/
+│   │       ├── page.tsx          # Entry detail (scrapbook view + photo lightbox)
+│   │       └── edit/page.tsx     # Edit entry (incl. photo management)
+│   ├── timeline/page.tsx       # Year/month timeline
+│   ├── stats/page.tsx          # Charts + achievements
+│   └── api/
+│       ├── auth/
+│       │   ├── login/route.ts   # Verify password, set session cookie
+│       │   └── logout/route.ts  # Clear session cookie
+│       ├── entries/
+│       │   ├── route.ts          # GET (list), POST (create)
+│       │   └── [id]/route.ts     # GET, PUT (update), DELETE
+│       ├── photos/[id]/route.ts # DELETE a single photo
+│       ├── upload/route.ts      # Upload photo to R2 + link to entry
+│       ├── stats/route.ts       # Aggregated statistics
+│       └── random/route.ts      # Random entry
+├── components/
+│   ├── auth/
+│   │   ├── DiaryBook.tsx        # Animated diary cover/book + password form
+│   │   └── FloatingParticles.tsx
+│   ├── diary/
+│   │   ├── EntryCard.tsx
+│   │   ├── StarRating.tsx        # 10-point rating component
+│   │   ├── MoodPicker.tsx
+│   │   ├── PhotoUpload.tsx
+│   │   └── PhotoGrid.tsx         # Photo lightbox + delete
+│   └── layout/Navbar.tsx
+├── database/
+│   ├── migrations/
+│   │   ├── 0001_initial_schema.sql
+│   │   └── 0002_update_rating_max.sql   # Upgrades ratings to 1–10
+│   └── seed.sql                  # 10 demo entries
+├── scripts/
+│   └── hash-password.mjs        # Generate DIARY_PASSWORD_HASH
+└── wrangler.toml                 # Cloudflare bindings (D1, R2)
+```
+
+---
+
+## 🚀 Local Development Setup
 
 ### 1. Install dependencies
 
@@ -27,11 +112,15 @@ A romantic digital diary for two people to save memories of movies they watched 
 npm install
 ```
 
-### 2. Get a TMDb API key (free)
+### 2. Set your diary password
 
-1. Sign up at [themoviedb.org](https://www.themoviedb.org/signup)
-2. Go to Settings → API → Request an API key (free tier works fine)
-3. Copy your API key (v3 auth)
+Generate a hash for your shared secret password:
+
+```bash
+node scripts/hash-password.mjs "your-secret-password"
+```
+
+This prints a hash in the format `iterations:saltHex:hashHex`. Copy it.
 
 ### 3. Create `.env.local`
 
@@ -40,157 +129,142 @@ cp .env.example .env.local
 ```
 
 Edit `.env.local`:
-```
-NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key_here
-```
 
-### 4. Set up Cloudflare D1
-
-```bash
-# Install wrangler if needed
-npm install -g wrangler
-wrangler login
-
-# Create D1 database
-wrangler d1 create movie-diary-db
-
-# Copy the database_id output into wrangler.toml under [[d1_databases]]
+```env
+DIARY_PASSWORD_HASH=100000:your_salt_hex:your_hash_hex
 ```
 
-Update `wrangler.toml`:
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "movie-diary-db"
-database_id = "YOUR_DATABASE_ID_HERE"   # ← paste here
-```
+> No TMDb key is needed — movie posters are added manually via URL.
 
-### 5. Run migrations
-
-```bash
-# Remote (production)
-npm run db:migrate
-
-# Local dev
-npm run db:local
-```
-
-### 6. Seed demo data (optional but recommended)
-
-```bash
-# Remote
-npm run db:seed
-
-# Local
-npm run db:seed:local
-```
-
-### 7. Start dev server
+### 4. Run the dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+This automatically seeds a local SQLite database (`.local-db/movie-diary.db`) with 10 demo entries on first run.
+
+Open [http://localhost:3000](http://localhost:3000) — you'll see the diary cover. Click the book and enter your password to continue.
 
 ---
 
 ## ☁️ Cloudflare Deployment
 
-### Set up R2 (photo uploads)
+### 1. Create the D1 database
+
+```bash
+wrangler d1 create movie-diary-db
+```
+
+Copy the printed `database_id` into `wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "movie-diary-db"
+database_id = "PASTE_YOUR_ID_HERE"
+migrations_dir = "database/migrations"
+```
+
+### 2. Create the R2 bucket
 
 ```bash
 wrangler r2 bucket create movie-diary-photos
 ```
 
-### Deploy to Cloudflare Pages
+Enable public access so uploaded photos render in the browser:
 
 ```bash
-npm run build
-wrangler pages deploy .next --project-name movie-diary
+wrangler r2 bucket dev-url enable movie-diary-photos
 ```
 
-Or connect your GitHub repo to Cloudflare Pages for automatic deploys.
+Copy the public `pub-xxxxxxxx.r2.dev` URL — update it in `app/api/upload/route.ts` where the R2 URL is constructed.
 
-### Set environment variables in Cloudflare dashboard
+### 3. Run migrations & seed data
 
-Go to Pages → your project → Settings → Environment variables:
-
+```bash
+wrangler d1 migrations apply movie-diary-db --remote
+wrangler d1 execute movie-diary-db --remote --file=database/seed.sql
 ```
-NEXT_PUBLIC_TMDB_API_KEY = your_tmdb_api_key
+
+### 4. Set the diary password secret
+
+```bash
+wrangler pages secret put DIARY_PASSWORD_HASH
 ```
+
+Paste the **same hash** generated in local setup (Step 2 above).
+
+### 5. Connect to Cloudflare Pages (GitHub)
+
+In **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git**:
+
+| Setting | Value |
+|---|---|
+| Framework preset | `Next.js` |
+| Build command | `npx @cloudflare/next-on-pages@1` |
+| Build output directory | `.vercel/output/static` |
+| Node.js version | `20` |
+
+### 6. Add bindings
+
+In **Settings → Bindings**:
+
+| Type | Variable name | Resource |
+|---|---|---|
+| D1 database | `DB` | `movie-diary-db` |
+| R2 bucket | `PHOTOS_BUCKET` | `movie-diary-photos` |
+
+### 7. Deploy
+
+Push to GitHub — Cloudflare Pages builds and deploys automatically. After adding bindings for the first time, retry the deployment once from the **Deployments** tab.
 
 ---
 
-## 📁 Project Structure
-
-```
-movie-diary/
-├── app/
-│   ├── api/
-│   │   ├── entries/         # GET list, POST create
-│   │   │   └── [id]/        # GET, PUT, DELETE single
-│   │   ├── stats/           # GET stats
-│   │   ├── random/          # GET random entry
-│   │   ├── upload/          # POST photo upload
-│   │   └── tmdb/            # TMDb proxy (search, movie details)
-│   ├── add/                 # Add entry form (5-step)
-│   ├── entries/             # Browse diary
-│   │   └── [id]/            # Entry detail / scrapbook view
-│   ├── timeline/            # Year/month timeline
-│   └── stats/               # Statistics + achievements
-├── components/
-│   ├── diary/               # StarRating, EntryCard, TMDbSearch, MoodPicker, PhotoUpload
-│   └── layout/              # Navbar
-├── database/
-│   ├── migrations/          # SQL migrations
-│   └── seed.sql             # 10 demo entries
-├── hooks/                   # use-entries, use-toast
-├── lib/                     # db helpers, tmdb client, utils
-├── store/                   # Zustand store
-├── types/                   # TypeScript types
-└── wrangler.toml            # Cloudflare config
-```
-
----
-
-## 🔧 Commands
+## 🔧 NPM Scripts
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run db:migrate` | Apply migrations to remote D1 |
-| `npm run db:seed` | Seed demo data to remote D1 |
-| `npm run db:local` | Apply migrations to local D1 |
-| `npm run db:seed:local` | Seed demo data to local D1 |
-| `npm run deploy` | Build + deploy to Cloudflare Pages |
+| `npm run dev` | Seed local DB (if empty) + start dev server |
+| `npm run build` | Production build |
+| `npm run seed:local` | Manually seed local SQLite DB |
+| `node scripts/hash-password.mjs "<pw>"` | Generate `DIARY_PASSWORD_HASH` |
+
+---
+
+## 🗄️ Database Schema
+
+| Table | Purpose |
+|---|---|
+| `movies` | Title, poster URL, genre, runtime, overview |
+| `diary_entries` | Date watched, ratings (1–10), memories, mood, location, snacks |
+| `photos` | Photo URLs linked to a diary entry |
+
+Migration `0002_update_rating_max.sql` upgrades the `your_rating`/`partner_rating` CHECK constraints from 1–5 to 1–10 while preserving existing data.
 
 ---
 
 ## 🐛 Troubleshooting
 
-**TMDb search not working?**
-- Make sure `NEXT_PUBLIC_TMDB_API_KEY` is set in `.env.local`
-- The app shows a warning banner if the key is missing
-- Free tier supports 40 req/10s — plenty for personal use
+**Locked out / forgot password?**
+Generate a new hash with `scripts/hash-password.mjs` and update both `.env.local` and the `DIARY_PASSWORD_HASH` Cloudflare secret (`wrangler pages secret put DIARY_PASSWORD_HASH`).
 
-**Database errors?**
-- Run `npm run db:local` to apply migrations locally
-- Make sure the `database_id` in `wrangler.toml` matches your D1 instance
+**Photos not displaying after upload?**
+Ensure the R2 bucket has public access enabled (`wrangler r2 bucket dev-url enable movie-diary-photos`) and that the public URL in `app/api/upload/route.ts` matches your bucket's `pub-xxxx.r2.dev` domain.
 
-**Photos not uploading in production?**
-- Create the R2 bucket: `wrangler r2 bucket create movie-diary-photos`
-- Make sure R2 binding is in `wrangler.toml`
+**"Database not available" errors?**
+Confirm the D1 binding is named exactly `DB` and migrations have been applied with `--remote`.
 
-**Build errors?**
-- The API routes use `@cloudflare/next-on-pages` runtime — they won't work in standard Node.js dev mode without wrangler
-- For local dev, the DB calls gracefully return 503; use `wrangler pages dev` for full local Cloudflare emulation
+**Middleware/build errors mentioning "edge runtime"?**
+`middleware.ts` must be at the **project root** (same level as `package.json`) with **no** `export const runtime` declaration — middleware is always edge by default.
+
+**Can bypass the password / navbar accessible without login?**
+Verify `middleware.ts` is at the project root and restart the dev server fully (`Ctrl+C` then `npm run dev`).
 
 ---
 
 ## 📝 Notes
 
-- All dates stored as `YYYY-MM-DD` strings in D1 (SQLite)
-- Photos stored in Cloudflare R2; in dev without R2 they use placeholder picsum URLs
-- TMDb API calls are server-side (API routes) to protect your key in production builds
+- All dates are stored as `YYYY-MM-DD` strings.
+- The session cookie is a deterministic hash — no server-side session store needed.
+- Local dev uses a file-based SQLite database (`.local-db/`, gitignored) that mirrors the D1 schema automatically.
