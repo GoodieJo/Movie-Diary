@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, isValidSession } from "@/lib/auth";
 
-export const runtime = "edge";
 
 const PUBLIC_PATHS = ["/", "/api/auth/login", "/api/auth/logout"];
 
