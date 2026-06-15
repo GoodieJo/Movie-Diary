@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Film, BookOpen, BarChart2, Clock, Plus } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Film, BookOpen, BarChart2, Clock, Plus, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/",         label: "Home",     icon: Film },
+  { href: "/home",     label: "Home",     icon: Film },
   { href: "/entries",  label: "Diary",    icon: BookOpen },
   { href: "/timeline", label: "Timeline", icon: Clock },
   { href: "/stats",    label: "Stats",    icon: BarChart2 },
@@ -13,6 +13,13 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  }
   return (
     <>
       {/* Desktop top nav */}
@@ -38,13 +45,20 @@ export function Navbar() {
               {label}
             </Link>
           ))}
-          <Link
+            <Link
             href="/add"
             className="ml-3 flex items-center gap-1.5 px-4 py-2 bg-rose-400 text-white rounded-lg text-sm font-medium hover:bg-rose-500 transition-colors shadow-sm"
           >
             <Plus size={15} />
             Add Entry
           </Link>
+          <button
+            onClick={handleLogout}
+            title="Lock the diary"
+            className="ml-1 p-2 rounded-lg text-[#9e7a60] hover:bg-rose-50 hover:text-rose-500 transition-colors"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </nav>
 
@@ -63,13 +77,20 @@ export function Navbar() {
             <span>{label}</span>
           </Link>
         ))}
-        <Link
+            <Link
           href="/add"
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs text-rose-500"
         >
           <Plus size={20} />
           <span>Add</span>
         </Link>
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs text-[#9e7a60]"
+        >
+          <LogOut size={20} />
+          <span>Lock</span>
+        </button>
       </nav>
     </>
   );
