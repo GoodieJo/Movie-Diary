@@ -134,7 +134,6 @@ export function AddMemoryModal({ onClose, onSaved }: Props) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                capture="environment"
                 className="hidden"
                 onChange={e => e.target.files && handleFiles(e.target.files)}
               />
@@ -168,7 +167,6 @@ export function AddMemoryModal({ onClose, onSaved }: Props) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                capture="environment"
                 className="hidden"
                 onChange={e => e.target.files && handleFiles(e.target.files)}
               />
