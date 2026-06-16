@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, BookOpen, BarChart2, Clock, Plus, LogOut } from "lucide-react";
+import { Film, BookOpen, BarChart2, Clock, Plus, LogOut, ImagesIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -9,6 +9,7 @@ const links = [
   { href: "/entries",  label: "Diary",    icon: BookOpen },
   { href: "/timeline", label: "Timeline", icon: Clock },
   { href: "/stats",    label: "Stats",    icon: BarChart2 },
+  { href: "/album",    label: "Album",    icon: ImagesIcon }
 ];
 
 export function Navbar() {

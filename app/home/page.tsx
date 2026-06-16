@@ -143,6 +143,14 @@ export default function HomePage() {
                 Surprise Me ✨
               </button>
             </div>
+              <Link
+                  href="/album"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#fdf5e8] hover:bg-[#f5e6cc] text-[#3d2b1f] rounded-xl font-semibold text-base transition-all border border-[#e8dcc8] hover:border-[#d4a843] hover:shadow-md group">
+                <span className="group-hover:scale-110 transition-transform text-xl">📸</span>
+                    Our Album
+              </Link>
+
+
           </motion.div>
 
           {/* Bottom sticker row */}
