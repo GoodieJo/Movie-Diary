@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, BookOpen, BarChart2, Clock, Plus, LogOut, ImagesIcon } from "lucide-react";
+import { Film, BookOpen, BarChart2, Clock, Plus, LogOut, ImagesIcon, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -53,6 +53,18 @@ export function Navbar() {
             <Plus size={15} />
             Add Entry
           </Link>
+                    <Link
+            href="/settings"
+            title="Settings"
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              pathname === "/settings"
+                ? "bg-rose-100 text-rose-600"
+                : "text-[#9e7a60] hover:bg-rose-50 hover:text-rose-500"
+            )}
+          >
+            <Settings size={16} />
+          </Link>
           <button
             onClick={handleLogout}
             title="Lock the diary"
@@ -84,6 +96,16 @@ export function Navbar() {
         >
           <Plus size={20} />
           <span>Add</span>
+        </Link>
+                <Link
+          href="/settings"
+          className={cn(
+            "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs transition-colors",
+            pathname === "/settings" ? "text-rose-500" : "text-[#9e7a60]"
+          )}
+        >
+          <Settings size={20} />
+          <span>Settings</span>
         </Link>
         <button
           onClick={handleLogout}

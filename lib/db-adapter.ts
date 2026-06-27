@@ -72,6 +72,33 @@ export async function getDb(): Promise<DbAdapter | null> {
             entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
             url TEXT NOT NULL, label TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
           );
+          CREATE TABLE IF NOT EXISTS album_photos (
+            id TEXT PRIMARY KEY,
+            image_url TEXT NOT NULL, r2_key TEXT NOT NULL,
+            caption TEXT, taken_date TEXT,
+            favorite INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          CREATE INDEX IF NOT EXISTS idx_album_created  ON album_photos(created_at DESC);
+          CREATE INDEX IF NOT EXISTS idx_album_favorite ON album_photos(favorite);
+          CREATE TABLE IF NOT EXISTS album_comments (
+            id TEXT PRIMARY KEY,
+            photo_id TEXT NOT NULL REFERENCES album_photos(id) ON DELETE CASCADE,
+            author TEXT NOT NULL, emoji TEXT NOT NULL, content TEXT NOT NULL,
+            parent_id TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            edited_at TEXT
+          );
+          CREATE INDEX IF NOT EXISTS idx_comments_photo   ON album_comments(photo_id);
+          CREATE INDEX IF NOT EXISTS idx_comments_created ON album_comments(created_at);
+          CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          );
+          INSERT OR IGNORE INTO settings (key, value) VALUES ('person1_name',  'Him');
+          INSERT OR IGNORE INTO settings (key, value) VALUES ('person1_emoji', '🫘');
+          INSERT OR IGNORE INTO settings (key, value) VALUES ('person2_name',  'Her');
+          INSERT OR IGNORE INTO settings (key, value) VALUES ('person2_emoji', '🌻');
         `);
       }
 

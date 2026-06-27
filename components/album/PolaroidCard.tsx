@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2, MessageCircle } from "lucide-react";
 import type { AlbumPhoto } from "./types";
 import { formatShortDate } from "@/lib/utils";
 
@@ -67,6 +67,15 @@ export function PolaroidCard({ photo, index, onClick, onDelete, onToggleFavorite
 
       {/* Action buttons — show on hover */}
       <div className="absolute bottom-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+       type="button"
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
+       aria-label="View comments"
+       className="w-6 h-6 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-rose-50 transition-colors"
+         >
+         <MessageCircle size={11} className="text-[#9e7a60]" />
+        </button>
+        {/* existing favorite and delete buttons unchanged */}
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}

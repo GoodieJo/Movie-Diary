@@ -1,7 +1,10 @@
 "use client";
+
+import { useState } from "react";
+import { CommentPanel } from "./CommentPanel";
 import { useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Star, MessageCircle } from "lucide-react";
 import type { AlbumPhoto } from "./types";
 import { formatShortDate } from "@/lib/utils";
 
@@ -15,6 +18,7 @@ interface Props {
 
 export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavorite }: Props) {
   const photo = photos[index];
+  const [showComments, setShowComments] = useState(false);
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
 
@@ -88,6 +92,14 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           />
         </button>
 
+        <button
+        onClick={(e) => { e.stopPropagation(); setShowComments(true); }}
+        aria-label="View comments"
+         className="absolute top-4 left-16 z-10 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+        >
+         <MessageCircle size={20} />
+        </button>
+
         {/* Prev */}
         {hasPrev && (
           <button
@@ -150,6 +162,12 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           </p>
         </motion.div>
       </motion.div>
+      {showComments && (
+          <CommentPanel
+            photoId={photo.id}
+            onClose={() => setShowComments(false)}
+          />
+        )}
     </AnimatePresence>
   );
 }
