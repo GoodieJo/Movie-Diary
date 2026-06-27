@@ -198,26 +198,6 @@ export default function AlbumPage() {
               Filter
             </button>
             
-                      {/* Notification bell */}
-          {total > 0 && (
-            <NotificationBell
-              onOpenPhoto={(photoId) => {
-                const idx = photos.findIndex(p => p.id === photoId);
-                if (idx !== -1) {
-                  setLightboxIdx(idx);
-                } else {
-                  // Photo not in current view — fetch and open it
-                  fetch(`/api/album/${photoId}`)
-                    .then(r => r.json() as Promise<{ data: AlbumPhoto }>)
-                    .then(d => {
-                      setPhotos(prev => [d.data, ...prev]);
-                      setLightboxIdx(0);
-                    })
-                    .catch(() => {});
-                }
-              }}
-            />
-          )}
             {/* Surprise */}
             {total > 0 && (
               <button
@@ -238,6 +218,26 @@ export default function AlbumPage() {
               <Plus size={15} />
               <span>Add Memory</span>
             </button>
+                                  {/* Notification bell */}
+          {total > 0 && (
+            <NotificationBell
+              onOpenPhoto={(photoId) => {
+                const idx = photos.findIndex(p => p.id === photoId);
+                if (idx !== -1) {
+                  setLightboxIdx(idx);
+                } else {
+                  // Photo not in current view — fetch and open it
+                  fetch(`/api/album/${photoId}`)
+                    .then(r => r.json() as Promise<{ data: AlbumPhoto }>)
+                    .then(d => {
+                      setPhotos(prev => [d.data, ...prev]);
+                      setLightboxIdx(0);
+                    })
+                    .catch(() => {});
+                }
+              }}
+            />
+          )}
           </div>
         </div>
 
