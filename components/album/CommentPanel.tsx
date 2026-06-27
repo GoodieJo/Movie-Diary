@@ -24,7 +24,9 @@ interface Props {
 const AUTHOR_KEY = "album_last_author";
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  // SQLite stores UTC without Z suffix — append Z to force correct UTC parsing
+  const utcStr = dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T") + "Z";
+  const diff   = Date.now() - new Date(utcStr).getTime();
   const m = Math.floor(diff / 60000);
   if (m < 1)  return "just now";
   if (m < 60) return `${m}m ago`;

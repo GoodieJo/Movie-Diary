@@ -4,6 +4,7 @@ export const runtime = "edge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, Shuffle, Star, SlidersHorizontal, X } from "lucide-react";
+import { NotificationBell } from "@/components/album/NotificationBell";
 import { PolaroidCard }   from "@/components/album/PolaroidCard";
 import { AlbumLightbox }  from "@/components/album/AlbumLightbox";
 import { AddMemoryModal } from "@/components/album/AddMemoryModal";
@@ -196,7 +197,27 @@ export default function AlbumPage() {
               <SlidersHorizontal size={14} />
               Filter
             </button>
-
+            
+                      {/* Notification bell */}
+          {total > 0 && (
+            <NotificationBell
+              onOpenPhoto={(photoId) => {
+                const idx = photos.findIndex(p => p.id === photoId);
+                if (idx !== -1) {
+                  setLightboxIdx(idx);
+                } else {
+                  // Photo not in current view — fetch and open it
+                  fetch(`/api/album/${photoId}`)
+                    .then(r => r.json() as Promise<{ data: AlbumPhoto }>)
+                    .then(d => {
+                      setPhotos(prev => [d.data, ...prev]);
+                      setLightboxIdx(0);
+                    })
+                    .catch(() => {});
+                }
+              }}
+            />
+          )}
             {/* Surprise */}
             {total > 0 && (
               <button
