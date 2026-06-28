@@ -19,13 +19,10 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
 
-  const [showControls,  setShowControls]  = useState(true);
-  const [showComments,  setShowComments]  = useState(false);
-  const [commentCount,  setCommentCount]  = useState<number | null>(null);
+  const [showControls, setShowControls] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const prev = useCallback(() => { if (hasPrev) onChange(index - 1); }, [hasPrev, index, onChange]);
-  const next = useCallback(() => { if (hasNext) onChange(index + 1); }, [hasNext, index, onChange]);
 
   // Fetch comment count when photo changes
   useEffect(() => {
@@ -58,6 +55,9 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
     });
   }
 
+  const prev = useCallback(() => { if (hasPrev) onChange(index - 1); }, [hasPrev, index, onChange]);
+  const next = useCallback(() => { if (hasNext) onChange(index + 1); }, [hasNext, index, onChange]);
+
   // Keyboard navigation
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -69,7 +69,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, prev, next, showComments]);
 
-  // Touch/swipe — left/right for nav, up for comments
+  // Touch swipe — horizontal for nav, up for comments
   useEffect(() => {
     let startX = 0;
     let startY = 0;
@@ -80,12 +80,10 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
     function onTouchEnd(e: TouchEvent) {
       const dx = e.changedTouches[0].clientX - startX;
       const dy = e.changedTouches[0].clientY - startY;
-      // Horizontal swipe — navigate
       if (Math.abs(dx) > Math.abs(dy)) {
         if (dx < -50) next();
         if (dx >  50) prev();
       } else {
-        // Swipe up — open comments
         if (dy < -60) setShowComments(true);
       }
     }
@@ -99,7 +97,6 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
 
   if (!photo) return null;
 
-  // Detect mobile via touch support
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
@@ -118,10 +115,9 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/85 backdrop-blur-md" />
 
-        {/* ── Desktop controls (always visible) ── */}
+        {/* ── Desktop controls ── */}
         {!isMobile && (
           <>
-            {/* Top-left: favorite */}
             <button
               onClick={e => { e.stopPropagation(); onToggleFavorite(photo); }}
               aria-label={photo.favorite ? "Remove from favorites" : "Add to favorites"}
@@ -130,7 +126,6 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
               <Star size={20} className={photo.favorite ? "fill-amber-400 text-amber-400" : ""} />
             </button>
 
-            {/* Top-left: comment */}
             <button
               onClick={e => { e.stopPropagation(); setShowComments(true); }}
               aria-label="View comments"
@@ -142,7 +137,6 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
               )}
             </button>
 
-            {/* Top-right: close */}
             <button
               onClick={e => { e.stopPropagation(); onClose(); }}
               aria-label="Close"
@@ -151,7 +145,6 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
               <X size={22} />
             </button>
 
-            {/* Prev */}
             {hasPrev && (
               <button
                 onClick={e => { e.stopPropagation(); prev(); }}
@@ -162,7 +155,6 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
               </button>
             )}
 
-            {/* Next */}
             {hasNext && (
               <button
                 onClick={e => { e.stopPropagation(); next(); }}
@@ -175,7 +167,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           </>
         )}
 
-        {/* ── Mobile bottom bar (tap to toggle) ── */}
+        {/* ── Mobile bottom bar ── */}
         {isMobile && (
           <AnimatePresence>
             {showControls && (
@@ -186,7 +178,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.2 }}
                 onClick={e => e.stopPropagation()}
-                className="absolute bottom-8 left-4 right-4 z-10 flex items-center justify-around bg-black/50 backdrop-blur-sm rounded-2xl px-2 py-3"
+                className="absolute bottom-6 left-4 right-4 z-10 flex items-center justify-around bg-black/50 backdrop-blur-sm rounded-2xl px-2 py-3"
               >
                 {/* Favorite */}
                 <button
@@ -196,9 +188,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
                 >
                   <Star
                     size={22}
-                    className={photo.favorite
-                      ? "fill-amber-400 text-amber-400"
-                      : "text-white/80"}
+                    className={photo.favorite ? "fill-amber-400 text-amber-400" : "text-white/80"}
                   />
                   <span className="text-[10px] text-white/60">Favorite</span>
                 </button>
@@ -247,7 +237,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           </AnimatePresence>
         )}
 
-        {/* Photo */}
+        {/* Photo + caption */}
         <motion.div
           key={photo.id}
           initial={{ opacity: 0, scale: 0.92 }}
@@ -255,44 +245,37 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.25 }}
           className="relative z-10 flex flex-col items-center max-w-3xl w-full mx-4"
+          style={{ paddingBottom: isMobile ? "100px" : "0px" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo.image_url}
             alt={photo.caption ?? "Memory"}
-            className="max-h-[80vh] max-w-full rounded-xl shadow-2xl object-contain"
+            className="max-h-[70vh] max-w-full rounded-xl shadow-2xl object-contain"
             onError={e => { (e.target as HTMLImageElement).src = "/placeholder-poster.svg"; }}
           />
 
-          {/* Caption — shown briefly, hidden when controls hidden on mobile */}
-          <AnimatePresence>
-            {(!isMobile || showControls) && (photo.caption || photo.taken_date) && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-3 text-center space-y-0.5"
-              >
-                {photo.caption && (
-                  <p className="handwriting text-white text-xl">{photo.caption}</p>
-                )}
-                {photo.taken_date && (
-                  <p className="text-white/50 text-sm">{formatShortDate(photo.taken_date)}</p>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Caption — always visible */}
+          {(photo.caption || photo.taken_date) && (
+            <div className="mt-3 text-center space-y-0.5">
+              {photo.caption && (
+                <p className="handwriting text-white text-xl">{photo.caption}</p>
+              )}
+              {photo.taken_date && (
+                <p className="text-white/50 text-sm">{formatShortDate(photo.taken_date)}</p>
+              )}
+            </div>
+          )}
 
           {/* Counter */}
           <p className="mt-2 text-white/30 text-xs">{index + 1} / {photos.length}</p>
 
-          {/* Mobile swipe-up hint */}
+          {/* Mobile hint when controls hidden */}
           {isMobile && !showControls && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-2 text-white/25 text-[11px]"
+              className="mt-1 text-white/25 text-[11px]"
             >
               tap for controls · swipe up for comments
             </motion.p>
