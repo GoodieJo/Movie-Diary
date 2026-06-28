@@ -47,7 +47,11 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  function handleTap() {
+function handleTap(e: React.MouseEvent) {
+    // Only toggle controls when clicking backdrop or photo — not buttons
+    const target = e.target as HTMLElement;
+    const isInteractive = target.closest("button") || target.closest("[role='button']");
+    if (isInteractive) return;
     if (showComments) return;
     setShowControls(s => {
       if (!s) resetHideTimer();
@@ -167,7 +171,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
           </>
         )}
 
-        {/* ── Mobile bottom bar ── */}
+{/* ── Mobile bottom bar ── */}
         {isMobile && (
           <AnimatePresence>
             {showControls && (
@@ -178,13 +182,16 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.2 }}
                 onClick={e => e.stopPropagation()}
-                className="absolute bottom-6 left-4 right-4 z-10 flex items-center justify-around bg-black/50 backdrop-blur-sm rounded-2xl px-2 py-3"
+                className="absolute bottom-6 left-4 right-4 z-20 flex items-center justify-around bg-black/50 backdrop-blur-sm rounded-2xl px-2 py-3"
               >
                 {/* Favorite */}
                 <button
-                  onClick={() => onToggleFavorite(photo)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onToggleFavorite(photo);
+                  }}
                   aria-label="Toggle favorite"
-                  className="flex flex-col items-center gap-1"
+                  className="flex flex-col items-center gap-1 px-4 py-1"
                 >
                   <Star
                     size={22}
@@ -194,7 +201,7 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
                 </button>
 
                 {/* Swipe hint */}
-                <div className="flex flex-col items-center gap-1 opacity-40">
+                <div className="flex flex-col items-center gap-1 opacity-40 px-2">
                   <div className="flex gap-1">
                     <ChevronLeft size={14} className="text-white" />
                     <ChevronRight size={14} className="text-white" />
@@ -204,9 +211,12 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
 
                 {/* Comments */}
                 <button
-                  onClick={() => setShowComments(true)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setShowComments(true);
+                  }}
                   aria-label="View comments"
-                  className="flex flex-col items-center gap-1"
+                  className="flex flex-col items-center gap-1 px-4 py-1"
                 >
                   <div className="relative">
                     <MessageCircle size={22} className="text-white/80" />
@@ -225,9 +235,12 @@ export function AlbumLightbox({ photos, index, onClose, onChange, onToggleFavori
 
                 {/* Close */}
                 <button
-                  onClick={onClose}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
                   aria-label="Close"
-                  className="flex flex-col items-center gap-1"
+                  className="flex flex-col items-center gap-1 px-4 py-1"
                 >
                   <X size={22} className="text-white/80" />
                   <span className="text-[10px] text-white/60">Close</span>
