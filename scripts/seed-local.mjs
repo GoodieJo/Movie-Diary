@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS diary_entries (
   favorite_scene TEXT, favorite_character TEXT, best_quote TEXT,
   laugh_memory TEXT, cry_memory TEXT, special_memory TEXT,
   mood_before TEXT, mood_after TEXT, location TEXT DEFAULT 'Home', snacks TEXT,
+  added_by TEXT NOT NULL DEFAULT '1' CHECK(added_by IN ('1','2')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS photos (

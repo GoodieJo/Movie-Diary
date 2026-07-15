@@ -2,7 +2,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Star, Loader2, ImagePlus } from "lucide-react";
+import { useSettings } from "./useSettings";
 import type { AlbumPhoto } from "./types";
+
+const AUTHOR_KEY = "album_last_author";
 
 interface Props {
   onClose:  () => void;
@@ -15,6 +18,7 @@ interface Preview {
 }
 
 export function AddMemoryModal({ onClose, onSaved }: Props) {
+  const { settings } = useSettings();
   const [previews, setPreviews]   = useState<Preview[]>([]);
   const [caption, setCaption]     = useState("");
   const [takenDate, setTakenDate] = useState("");
@@ -23,6 +27,14 @@ export function AddMemoryModal({ onClose, onSaved }: Props) {
   const [progress, setProgress]   = useState(0);
   const [error, setError]         = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const savedAuthor = typeof window !== "undefined" ? localStorage.getItem(AUTHOR_KEY) : null;
+  const [addedBy, setAddedBy] = useState<"1" | "2">(savedAuthor === "2" ? "2" : "1");
+
+  function selectAddedBy(a: "1" | "2") {
+    setAddedBy(a);
+    localStorage.setItem(AUTHOR_KEY, a);
+  }
 
   function handleFiles(files: FileList) {
     const allowed = ["image/jpeg", "image/png", "image/webp"];
@@ -69,6 +81,7 @@ export function AddMemoryModal({ onClose, onSaved }: Props) {
             caption:    caption || null,
             taken_date: takenDate || null,
             favorite:   favorite ? 1 : 0,
+            added_by:   addedBy,
           }),
         });
         if (!saveRes.ok) throw new Error("Save failed");
@@ -175,6 +188,34 @@ export function AddMemoryModal({ onClose, onSaved }: Props) {
 
           {/* Caption */}
           <div className="space-y-3 mb-5">
+            <div>
+              <label className="text-sm font-medium text-[#3d2b1f] block mb-1.5">
+                Who&apos;s adding this?
+              </label>
+              <div className="flex gap-2">
+                {(["1", "2"] as const).map(a => {
+                  const name  = a === "1" ? settings.person1_name  : settings.person2_name;
+                  const emoji = a === "1" ? settings.person1_emoji : settings.person2_emoji;
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => selectAddedBy(a)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                        addedBy === a
+                          ? a === "1"
+                            ? "bg-blue-50 border-blue-300 text-blue-700"
+                            : "bg-rose-50 border-rose-300 text-rose-600"
+                          : "bg-white border-[#e8dcc8] text-[#7a5c47]"
+                      }`}
+                    >
+                      <span>{emoji}</span> {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-[#3d2b1f] block mb-1.5">
                 Caption <span className="text-[#b8a090] font-normal">(optional)</span>

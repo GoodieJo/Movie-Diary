@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/components/album/useSettings";
+import { NotificationToggle } from "@/components/settings/NotificationToggle";
 import { toast } from "@/hooks/use-toast";
 import { LogOut, Save } from "lucide-react";
 import Link from "next/link";
@@ -179,6 +180,22 @@ export default function SettingsPage() {
         >
           {saving ? "Saving…" : <><Save size={16} /> Save Changes</>}
         </button>
+      </motion.div>
+
+      {/* Notifications section */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="diary-card p-5 space-y-3"
+      >
+        <div>
+          <h2 className="font-display font-semibold text-[#3d2b1f] text-lg">🔔 Notifications</h2>
+          <p className="text-sm text-[#9e7a60] mt-1">
+            Get notified on this device for new diary entries, memories, and comments from the other person.
+          </p>
+        </div>
+        <NotificationToggle />
       </motion.div>
 
       {/* Diary / Logout section */}

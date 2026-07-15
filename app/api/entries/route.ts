@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db-adapter";
+import { sendPush } from "@/lib/push";
 
 export const runtime = "edge";
 
 const EntrySchema = z.object({
+  added_by:      z.enum(["1", "2"]).default("1"),
   tmdb_id:       z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
   title:              z.string().min(1),
   poster_url:         z.string().optional(),
@@ -139,8 +141,8 @@ export async function POST(request: NextRequest) {
       `INSERT INTO diary_entries
         (movie_id, watched_date, start_time, end_time, your_rating, partner_rating,
          favorite_scene, favorite_character, best_quote, laugh_memory, cry_memory,
-         special_memory, mood_before, mood_after, location, snacks)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         special_memory, mood_before, mood_after, location, snacks, added_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         movieRow.id,
         d.watched_date, d.start_time ?? null, d.end_time ?? null,
@@ -149,15 +151,23 @@ export async function POST(request: NextRequest) {
         d.best_quote ?? null, d.laugh_memory ?? null,
         d.cry_memory ?? null, d.special_memory ?? null,
         d.mood_before ?? null, d.mood_after ?? null,
-        d.location ?? "Home", d.snacks ?? null,
+        d.location ?? "Home", d.snacks ?? null, d.added_by,
       ]
     );
 
-    const entry = await db.queryFirst(
+    const entry = await db.queryFirst<{ id: number }>(
       `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id
        FROM diary_entries de JOIN movies m ON m.id = de.movie_id
        ORDER BY de.id DESC LIMIT 1`
     );
+
+    // Awaited (not fire-and-forget) — Cloudflare Workers can terminate unawaited
+    // promises once the response is returned unless wrapped in ctx.waitUntil.
+    await sendPush(d.added_by, {
+      title: "New diary entry 📖",
+      body:  `"${d.title}" was just added to your diary.`,
+      url:   entry ? `/entries/${entry.id}` : "/home",
+    }).catch(() => {});
 
     return NextResponse.json({ data: entry }, { status: 201 });
   } catch (err) {

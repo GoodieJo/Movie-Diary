@@ -14,9 +14,13 @@ import { MoodBeforePicker, MoodAfterPicker } from "@/components/diary/MoodPicker
 import { PhotoUpload } from "@/components/diary/PhotoUpload";
 import { WATCH_LOCATIONS } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { useSettings } from "@/components/album/useSettings";
 import type { MoodBefore, MoodAfter } from "@/types";
 
+const AUTHOR_KEY = "album_last_author";
+
 const schema = z.object({
+  added_by:           z.enum(["1", "2"]),
   title:              z.string().min(1, "Movie title is required"),
   watched_date:       z.string().min(1, "Date is required"),
   poster_url:         z.string().optional(),
@@ -84,11 +88,13 @@ function Textarea({ className = "", ...props }: React.TextareaHTMLAttributes<HTM
 export default function AddEntryPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const { settings } = useSettings();
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const { register, control, setValue, watch, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
+      added_by: typeof window !== "undefined" && localStorage.getItem(AUTHOR_KEY) === "2" ? "2" : "1",
       title: "",
       watched_date: new Date().toISOString().split("T")[0],
       location: "Home",
@@ -173,6 +179,40 @@ router.push(`/entries/${entry.id}`);
           <motion.div key="movie" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
             <div className="diary-card p-5 space-y-5">
               <h2 className="font-display text-xl font-semibold text-[#3d2b1f]">🎬 Movie Details</h2>
+
+              <FormField label="Who's adding this?">
+                <Controller
+                  control={control}
+                  name="added_by"
+                  render={({ field }) => (
+                    <div className="flex gap-2">
+                      {(["1", "2"] as const).map(a => {
+                        const name  = a === "1" ? settings.person1_name  : settings.person2_name;
+                        const emoji = a === "1" ? settings.person1_emoji : settings.person2_emoji;
+                        return (
+                          <button
+                            key={a}
+                            type="button"
+                            onClick={() => {
+                              field.onChange(a);
+                              localStorage.setItem(AUTHOR_KEY, a);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                              field.value === a
+                                ? a === "1"
+                                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                                  : "bg-rose-50 border-rose-300 text-rose-600"
+                                : "bg-white border-[#e8dcc8] text-[#7a5c47]"
+                            }`}
+                          >
+                            <span>{emoji}</span> {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                />
+              </FormField>
 
               <FormField label="Movie Title" required>
                 <Input {...register("title")} placeholder="e.g. Interstellar" />

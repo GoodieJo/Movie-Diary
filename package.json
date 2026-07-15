@@ -17,6 +17,7 @@
     "seed:local": "node scripts/seed-local.mjs"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2",
     "@hookform/resolvers": "^3.9.0",
     "@libsql/client": "^0.17.3",
     "@radix-ui/react-alert-dialog": "^1.1.2",

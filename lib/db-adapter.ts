@@ -49,7 +49,7 @@ export async function getDb(): Promise<DbAdapter | null> {
 
       const client = createClient({ url: `file:${dbFile}` });
 
-      try { await client.execute("SELECT 1 FROM movies LIMIT 1"); }
+      try { await client.execute("SELECT 1 FROM push_subscriptions LIMIT 1"); }
       catch {
         await client.executeMultiple(`
           CREATE TABLE IF NOT EXISTS movies (
@@ -65,6 +65,7 @@ export async function getDb(): Promise<DbAdapter | null> {
             favorite_scene TEXT, favorite_character TEXT, best_quote TEXT,
             laugh_memory TEXT, cry_memory TEXT, special_memory TEXT,
             mood_before TEXT, mood_after TEXT, location TEXT DEFAULT 'Home', snacks TEXT,
+            added_by TEXT NOT NULL DEFAULT '1' CHECK(added_by IN ('1','2')),
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
           );
           CREATE TABLE IF NOT EXISTS photos (
@@ -77,6 +78,7 @@ export async function getDb(): Promise<DbAdapter | null> {
             image_url TEXT NOT NULL, r2_key TEXT NOT NULL,
             caption TEXT, taken_date TEXT,
             favorite INTEGER NOT NULL DEFAULT 0,
+            added_by TEXT NOT NULL DEFAULT '1' CHECK(added_by IN ('1','2')),
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
           );
           CREATE INDEX IF NOT EXISTS idx_album_created  ON album_photos(created_at DESC);
@@ -99,6 +101,13 @@ export async function getDb(): Promise<DbAdapter | null> {
           INSERT OR IGNORE INTO settings (key, value) VALUES ('person1_emoji', '🫘');
           INSERT OR IGNORE INTO settings (key, value) VALUES ('person2_name',  'Her');
           INSERT OR IGNORE INTO settings (key, value) VALUES ('person2_emoji', '🌻');
+          CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id TEXT PRIMARY KEY,
+            person TEXT NOT NULL CHECK(person IN ('1','2')),
+            endpoint TEXT NOT NULL UNIQUE,
+            p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
         `);
       }
 

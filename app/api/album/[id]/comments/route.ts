@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db-adapter";
+import { sendPush } from "@/lib/push";
 
 export async function GET(
   _req: NextRequest,
@@ -48,5 +49,17 @@ export async function POST(
   const comment = await db.queryFirst(
     "SELECT * FROM album_comments WHERE id = ?", [commentId]
   );
+
+  const person1Name = await db.queryFirst<{ value: string }>(
+    "SELECT value FROM settings WHERE key = 'person1_name'"
+  );
+  const commenterIsPerson1 = body.author === (person1Name?.value ?? "Him");
+
+  await sendPush(commenterIsPerson1 ? "1" : "2", {
+    title: `${body.emoji} ${body.author} commented`,
+    body:  body.content.trim(),
+    url:   "/album",
+  }).catch(() => {});
+
   return NextResponse.json({ data: comment }, { status: 201 });
 }

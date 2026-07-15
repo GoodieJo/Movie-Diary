@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/lib/db-adapter";
+import { sendPush } from "@/lib/push";
 
 const CreateSchema = z.object({
   id:         z.string().min(1),
@@ -11,6 +12,7 @@ const CreateSchema = z.object({
   caption:    z.string().optional(),
   taken_date: z.string().optional(),
   favorite:   z.number().min(0).max(1).optional(),
+  added_by:   z.enum(["1", "2"]).default("1"),
 });
 
 export async function GET(request: NextRequest) {
@@ -75,11 +77,18 @@ export async function POST(request: NextRequest) {
 
   const d = parsed.data;
   await db.execute(
-    `INSERT INTO album_photos (id, image_url, r2_key, caption, taken_date, favorite)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [d.id, d.image_url, d.r2_key, d.caption ?? null, d.taken_date ?? null, d.favorite ?? 0]
+    `INSERT INTO album_photos (id, image_url, r2_key, caption, taken_date, favorite, added_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [d.id, d.image_url, d.r2_key, d.caption ?? null, d.taken_date ?? null, d.favorite ?? 0, d.added_by]
   );
 
   const photo = await db.queryFirst("SELECT * FROM album_photos WHERE id = ?", [d.id]);
+
+  await sendPush(d.added_by, {
+    title: "New memory added 📸",
+    body:  d.caption ? d.caption : "A new photo was added to Our Album.",
+    url:   "/album",
+  }).catch(() => {});
+
   return NextResponse.json({ data: photo }, { status: 201 });
 }
