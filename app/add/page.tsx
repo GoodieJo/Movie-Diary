@@ -1,8 +1,8 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -86,7 +86,17 @@ function Textarea({ className = "", ...props }: React.TextareaHTMLAttributes<HTM
 }
 
 export default function AddEntryPage() {
+  return (
+    <Suspense fallback={null}>
+      <AddEntryForm />
+    </Suspense>
+  );
+}
+
+function AddEntryForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const wishlistId = searchParams.get("wishlist_id");
   const [step, setStep] = useState(0);
   const { settings } = useSettings();
 
@@ -95,7 +105,9 @@ export default function AddEntryPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       added_by: typeof window !== "undefined" && localStorage.getItem(AUTHOR_KEY) === "2" ? "2" : "1",
-      title: "",
+      title: searchParams.get("title") ?? "",
+      poster_url: searchParams.get("poster_url") ?? undefined,
+      runtime: searchParams.get("runtime") ? Number(searchParams.get("runtime")) : undefined,
       watched_date: new Date().toISOString().split("T")[0],
       location: "Home",
     },
@@ -132,6 +144,10 @@ if (photoUrls.length > 0) {
       })(),
     })
   ));
+}
+
+if (wishlistId) {
+  await fetch(`/api/wishlist/${wishlistId}`, { method: "DELETE" }).catch(() => {});
 }
 
 toast({ title: "Memory saved! 💕", description: `"${data.title}" added to your diary.` });

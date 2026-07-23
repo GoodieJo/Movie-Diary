@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BookOpen, BarChart2, Plus, Shuffle } from "lucide-react";
+import { BookOpen, BarChart2, Plus, Shuffle, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -125,6 +125,14 @@ export default function HomePage() {
             >
               <BookOpen size={18} />
               Browse Diary
+            </Link>
+
+            <Link
+              href="/wishlist"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl font-semibold text-base transition-all border border-violet-200 hover:shadow-md group"
+            >
+              <Moon size={18} className="group-hover:scale-110 transition-transform" />
+              Wishlist
             </Link>
 
             <div className="flex gap-3">

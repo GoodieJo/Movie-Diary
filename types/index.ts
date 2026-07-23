@@ -41,6 +41,16 @@ export interface DiaryEntry {
   tmdb_id?: number;
 }
 
+export interface WishlistItem {
+  id: number;
+  title: string;
+  poster_url?: string;
+  runtime?: number;
+  remark?: string;
+  added_by: "1" | "2";
+  created_at: string;
+}
+
 export interface Photo {
   id: number;
   entry_id: number;

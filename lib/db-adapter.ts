@@ -111,6 +111,19 @@ export async function getDb(): Promise<DbAdapter | null> {
         `);
       }
 
+      try { await client.execute("SELECT 1 FROM wishlist LIMIT 1"); }
+      catch {
+        await client.executeMultiple(`
+          CREATE TABLE IF NOT EXISTS wishlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL, poster_url TEXT, runtime INTEGER, remark TEXT,
+            added_by TEXT NOT NULL DEFAULT '1' CHECK(added_by IN ('1','2')),
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          CREATE INDEX IF NOT EXISTS idx_wishlist_created ON wishlist(created_at DESC);
+        `);
+      }
+
       type Args = Parameters<typeof client.execute>[0] extends { args: infer A } ? A : never;
       return {
         async query<T extends DbRow>(sql: string, params: unknown[] = []) {
