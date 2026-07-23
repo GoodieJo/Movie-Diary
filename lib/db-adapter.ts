@@ -124,6 +124,23 @@ export async function getDb(): Promise<DbAdapter | null> {
         `);
       }
 
+      try { await client.execute("SELECT media_type FROM movies LIMIT 1"); }
+      catch { await client.execute("ALTER TABLE movies ADD COLUMN media_type TEXT NOT NULL DEFAULT 'movie'"); }
+
+      try { await client.execute("SELECT 1 FROM episodes LIMIT 1"); }
+      catch {
+        await client.executeMultiple(`
+          CREATE TABLE IF NOT EXISTS episodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+            episode_number INTEGER NOT NULL,
+            watched_date TEXT NOT NULL, start_time TEXT, end_time TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          CREATE INDEX IF NOT EXISTS idx_episodes_entry_id ON episodes(entry_id);
+        `);
+      }
+
       type Args = Parameters<typeof client.execute>[0] extends { args: infer A } ? A : never;
       return {
         async query<T extends DbRow>(sql: string, params: unknown[] = []) {

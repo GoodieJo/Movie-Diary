@@ -108,14 +108,22 @@ export default function EntryDetailPage() {
             <p className="text-sm text-[#9e7a60] mt-1 flex items-center gap-1">
               📅 {formatDate(entry.watched_date)}
             </p>
-            {entry.genre && (
-              <span className="inline-block mt-2 text-xs bg-white border border-[#e8dcc8] px-2.5 py-1 rounded-full text-[#7a5c47]">
-                {entry.genre}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              {entry.media_type === "series" && (
+                <span className="text-xs bg-violet-50 text-violet-600 border border-violet-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  📺 Series
+                </span>
+              )}
+              {entry.genre && (
+                <span className="text-xs bg-white border border-[#e8dcc8] px-2.5 py-1 rounded-full text-[#7a5c47]">
+                  {entry.genre}
+                </span>
+              )}
+            </div>
             {entry.runtime && (
               <p className="text-xs text-[#b8a090] mt-1.5 flex items-center gap-1">
                 <Clock size={11} /> {Math.floor(entry.runtime / 60)}h {entry.runtime % 60}m
+                {entry.media_type === "series" && " / episode"}
               </p>
             )}
             {avgRating && (
@@ -145,6 +153,31 @@ export default function EntryDetailPage() {
           )}
         </div>
       </motion.div>
+
+      {/* Episodes */}
+      {entry.media_type === "series" && entry.episodes && entry.episodes.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="diary-card p-5 mb-5"
+        >
+          <h2 className="font-display font-semibold text-[#3d2b1f] mb-3">📺 Episodes Watched</h2>
+          <div className="space-y-2">
+            {entry.episodes.map(ep => (
+              <div key={ep.id} className="flex items-center justify-between gap-2 text-sm bg-[#fdf5e8] border border-[#e8dcc8] rounded-lg px-3 py-2 flex-wrap">
+                <span className="font-medium text-[#3d2b1f]">Episode {ep.episode_number}</span>
+                <span className="text-[#7a5c47]">{formatDate(ep.watched_date)}</span>
+                {ep.start_time && ep.end_time && (
+                  <span className="text-[#9e7a60] flex items-center gap-1">
+                    <Clock size={12} /> {ep.start_time} – {ep.end_time}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Ratings detail */}
       {(entry.your_rating || entry.partner_rating) && (

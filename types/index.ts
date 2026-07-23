@@ -1,5 +1,7 @@
 // Core database types
 
+export type MediaType = "movie" | "series";
+
 export interface Movie {
   id: number;
   tmdb_id?: number;
@@ -8,6 +10,17 @@ export interface Movie {
   genre?: string;
   runtime?: number;
   overview?: string;
+  media_type?: MediaType;
+  created_at: string;
+}
+
+export interface Episode {
+  id: number;
+  entry_id: number;
+  episode_number: number;
+  watched_date: string;
+  start_time?: string;
+  end_time?: string;
   created_at: string;
 }
 
@@ -33,12 +46,14 @@ export interface DiaryEntry {
   // Joined / flattened from SQL JOIN (API returns these directly)
   movie?: Movie;
   photos?: Photo[];
+  episodes?: Episode[];
   title?: string;
   poster_url?: string;
   genre?: string;
   runtime?: number;
   overview?: string;
   tmdb_id?: number;
+  media_type?: MediaType;
 }
 
 export interface WishlistItem {
@@ -134,9 +149,11 @@ export interface EntryFormData {
   genre?: string;
   runtime?: number;
   overview?: string;
-  watched_date: string;
+  media_type?: MediaType;
+  watched_date?: string;
   start_time?: string;
   end_time?: string;
+  episodes?: { watched_date: string; start_time?: string; end_time?: string }[];
   your_rating?: number;
   partner_rating?: number;
   favorite_scene?: string;

@@ -3,10 +3,10 @@ export const runtime = "edge";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, X } from "lucide-react";
 import { StarRating } from "@/components/diary/StarRating";
 import { MoodBeforePicker, MoodAfterPicker } from "@/components/diary/MoodPicker";
 import { PhotoGrid } from "@/components/diary/PhotoGrid";
@@ -53,6 +53,9 @@ export default function EditEntryPage() {
   const [saving, setSaving]   = useState(false);
 
   const { register, control, reset, watch, getValues } = useForm();
+  const { fields: episodeFields, append: appendEpisode, remove: removeEpisode } = useFieldArray({
+    control, name: "episodes",
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +68,14 @@ export default function EditEntryPage() {
           watched_date:       d.data.watched_date ?? "",
           start_time:         d.data.start_time ?? "",
           end_time:           d.data.end_time ?? "",
+          episodes: (d.data.episodes && d.data.episodes.length > 0
+            ? d.data.episodes
+            : [{ watched_date: d.data.watched_date ?? "", start_time: "", end_time: "" }]
+          ).map(ep => ({
+            watched_date: ep.watched_date ?? "",
+            start_time:   ep.start_time ?? "",
+            end_time:     ep.end_time ?? "",
+          })),
           your_rating:        d.data.your_rating ?? null,
           partner_rating:     d.data.partner_rating ?? null,
           favorite_scene:     d.data.favorite_scene ?? "",
@@ -89,6 +100,10 @@ export default function EditEntryPage() {
     setSaving(true);
     try {
       const values = getValues();
+      // Episodes only apply to series entries — a movie entry has no `episodes`
+      // to send, so the API's normal watched_date/start_time/end_time path is used instead.
+      if (entry?.media_type !== "series") delete values.episodes;
+
       const res = await fetch(`/api/entries/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -173,7 +188,7 @@ export default function EditEntryPage() {
           <FormField label="Genre">
             <Input {...register("genre")} placeholder="Drama…" />
           </FormField>
-          <FormField label="Runtime (min)">
+          <FormField label={entry.media_type === "series" ? "Runtime per Episode (min)" : "Runtime (min)"}>
             <Input type="number" {...register("runtime")} placeholder="120" />
           </FormField>
         </div>
@@ -181,20 +196,62 @@ export default function EditEntryPage() {
 
       {/* Date & Location */}
       <div className="diary-card p-5 space-y-4">
-        <h2 className="font-display font-semibold text-[#3d2b1f]">📅 When & Where</h2>
+        <h2 className="font-display font-semibold text-[#3d2b1f] flex items-center gap-2">
+          📅 When & Where
+          {entry.media_type === "series" && (
+            <span className="text-xs font-normal bg-violet-50 text-violet-600 border border-violet-200 px-2 py-0.5 rounded-full">📺 Series</span>
+          )}
+        </h2>
 
-        <FormField label="Date Watched">
-          <Input type="date" {...register("watched_date")} />
-        </FormField>
+        {entry.media_type === "series" ? (
+          <FormField label="Episodes Watched" hint={`${episodeFields.length} logged`}>
+            <div className="space-y-3">
+              {episodeFields.map((field, index) => (
+                <div key={field.id} className="bg-[#fdf5e8] border border-[#e8dcc8] rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-[#7a5c47]">Episode {index + 1}</p>
+                    {episodeFields.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeEpisode(index)}
+                        className="text-[#b8a090] hover:text-rose-500 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <Input type="date" {...register(`episodes.${index}.watched_date` as const)} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input type="time" {...register(`episodes.${index}.start_time` as const)} placeholder="Start" />
+                    <Input type="time" {...register(`episodes.${index}.end_time` as const)} placeholder="End" />
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => appendEpisode({ watched_date: "", start_time: "", end_time: "" })}
+                className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-rose-300 text-rose-500 rounded-xl text-sm font-medium hover:bg-rose-50 transition-colors"
+              >
+                <Plus size={14} /> Log Episode {episodeFields.length + 1}
+              </button>
+            </div>
+          </FormField>
+        ) : (
+          <>
+            <FormField label="Date Watched">
+              <Input type="date" {...register("watched_date")} />
+            </FormField>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Start Time">
-            <Input type="time" {...register("start_time")} />
-          </FormField>
-          <FormField label="End Time">
-            <Input type="time" {...register("end_time")} />
-          </FormField>
-        </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Start Time">
+                <Input type="time" {...register("start_time")} />
+              </FormField>
+              <FormField label="End Time">
+                <Input type="time" {...register("end_time")} />
+              </FormField>
+            </div>
+          </>
+        )}
 
         <FormField label="Where?">
           <Controller

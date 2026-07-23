@@ -5,6 +5,12 @@ import { sendPush } from "@/lib/push";
 
 export const runtime = "edge";
 
+const EpisodeSchema = z.object({
+  watched_date: z.string().min(1),
+  start_time:   z.string().optional(),
+  end_time:     z.string().optional(),
+});
+
 const EntrySchema = z.object({
   added_by:      z.enum(["1", "2"]).default("1"),
   tmdb_id:       z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
@@ -13,9 +19,11 @@ const EntrySchema = z.object({
   genre:              z.string().optional(),
   runtime:       z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
   overview:           z.string().optional(),
-  watched_date:       z.string().min(1),
+  media_type:         z.enum(["movie", "series"]).default("movie"),
+  watched_date:       z.string().optional(),
   start_time:         z.string().optional(),
   end_time:           z.string().optional(),
+  episodes:           z.array(EpisodeSchema).optional(),
   your_rating:   z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(10).optional()),
   partner_rating:z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(10).optional()),
   favorite_scene:     z.string().optional(),
@@ -62,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   const [entries, countRow] = await Promise.all([
     db.query(
-      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id
+      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id, m.media_type
        FROM diary_entries de JOIN movies m ON m.id = de.movie_id
        WHERE ${where} ORDER BY ${order} LIMIT ? OFFSET ?`,
       [...params, limit, offset]
@@ -76,17 +84,25 @@ export async function GET(request: NextRequest) {
   if (entries.length > 0) {
     const ids = entries.map(e => e.id as number);
     const placeholders = ids.map(() => "?").join(",");
-    const photos = await db.query(
-      `SELECT * FROM photos WHERE entry_id IN (${placeholders})`, ids
-    );
+    const [photos, episodes] = await Promise.all([
+      db.query(`SELECT * FROM photos WHERE entry_id IN (${placeholders})`, ids),
+      db.query(`SELECT * FROM episodes WHERE entry_id IN (${placeholders}) ORDER BY episode_number`, ids),
+    ]);
     const photoMap: Record<number, unknown[]> = {};
     for (const p of photos) {
       const eid = p.entry_id as number;
       if (!photoMap[eid]) photoMap[eid] = [];
       photoMap[eid].push(p);
     }
+    const episodeMap: Record<number, unknown[]> = {};
+    for (const ep of episodes) {
+      const eid = ep.entry_id as number;
+      if (!episodeMap[eid]) episodeMap[eid] = [];
+      episodeMap[eid].push(ep);
+    }
     for (const e of entries) {
       (e as Record<string, unknown>).photos = photoMap[e.id as number] ?? [];
+      (e as Record<string, unknown>).episodes = episodeMap[e.id as number] ?? [];
     }
   }
 
@@ -117,6 +133,24 @@ export async function POST(request: NextRequest) {
   }
 
   const d = parsed.data;
+  const isSeries = d.media_type === "series";
+
+  if (isSeries && (!d.episodes || d.episodes.length === 0)) {
+    return NextResponse.json({ error: "At least one episode is required for a series" }, { status: 422 });
+  }
+  if (!isSeries && !d.watched_date) {
+    return NextResponse.json({ error: "Watched date is required" }, { status: 422 });
+  }
+
+  // For a series, the entry's summary date/time mirrors the most recently watched episode
+  // so existing sort/timeline/stats logic (all keyed on diary_entries.watched_date) keeps working.
+  const sortedEpisodes = isSeries
+    ? [...d.episodes!].sort((a, b) => a.watched_date.localeCompare(b.watched_date))
+    : null;
+  const latestEpisode = sortedEpisodes?.[sortedEpisodes.length - 1];
+  const summaryDate  = isSeries ? latestEpisode!.watched_date : d.watched_date!;
+  const summaryStart = isSeries ? latestEpisode!.start_time ?? null : d.start_time ?? null;
+  const summaryEnd   = isSeries ? latestEpisode!.end_time ?? null : d.end_time ?? null;
 
   try {
     let movieRow = d.tmdb_id
@@ -127,8 +161,8 @@ export async function POST(request: NextRequest) {
 
     if (!movieRow) {
       await db.execute(
-        "INSERT INTO movies (tmdb_id, title, poster_url, genre, runtime, overview) VALUES (?,?,?,?,?,?)",
-        [d.tmdb_id ?? null, d.title, d.poster_url ?? null, d.genre ?? null, d.runtime ?? null, d.overview ?? null]
+        "INSERT INTO movies (tmdb_id, title, poster_url, genre, runtime, overview, media_type) VALUES (?,?,?,?,?,?,?)",
+        [d.tmdb_id ?? null, d.title, d.poster_url ?? null, d.genre ?? null, d.runtime ?? null, d.overview ?? null, d.media_type]
       );
       movieRow = await db.queryFirst<{ id: number }>(
         "SELECT id FROM movies ORDER BY id DESC LIMIT 1"
@@ -145,7 +179,7 @@ export async function POST(request: NextRequest) {
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         movieRow.id,
-        d.watched_date, d.start_time ?? null, d.end_time ?? null,
+        summaryDate, summaryStart, summaryEnd,
         d.your_rating ?? null, d.partner_rating ?? null,
         d.favorite_scene ?? null, d.favorite_character ?? null,
         d.best_quote ?? null, d.laugh_memory ?? null,
@@ -155,11 +189,32 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    const entry = await db.queryFirst<{ id: number }>(
-      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id
-       FROM diary_entries de JOIN movies m ON m.id = de.movie_id
-       ORDER BY de.id DESC LIMIT 1`
+    const entryRow = await db.queryFirst<{ id: number }>(
+      "SELECT id FROM diary_entries ORDER BY id DESC LIMIT 1"
     );
+    if (!entryRow) throw new Error("Failed to create diary entry");
+
+    if (isSeries) {
+      for (let i = 0; i < sortedEpisodes!.length; i++) {
+        const ep = sortedEpisodes![i];
+        await db.execute(
+          "INSERT INTO episodes (entry_id, episode_number, watched_date, start_time, end_time) VALUES (?,?,?,?,?)",
+          [entryRow.id, i + 1, ep.watched_date, ep.start_time ?? null, ep.end_time ?? null]
+        );
+      }
+    }
+
+    const entry = await db.queryFirst<{ id: number }>(
+      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id, m.media_type
+       FROM diary_entries de JOIN movies m ON m.id = de.movie_id
+       WHERE de.id = ?`,
+      [entryRow.id]
+    );
+    if (entry && isSeries) {
+      (entry as Record<string, unknown>).episodes = await db.query(
+        "SELECT * FROM episodes WHERE entry_id = ? ORDER BY episode_number", [entryRow.id]
+      );
+    }
 
     // Awaited (not fire-and-forget) — Cloudflare Workers can terminate unawaited
     // promises once the response is returned unless wrapped in ctx.waitUntil.

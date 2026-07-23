@@ -48,6 +48,11 @@ export function EntryCard({ entry, index = 0 }: { entry: DiaryEntry; index?: num
             )}
 
             <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {entry.media_type === "series" && (
+                <span className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full border border-violet-200">
+                  📺 {entry.episodes?.length ?? 0} ep{(entry.episodes?.length ?? 0) !== 1 ? "s" : ""}
+                </span>
+              )}
               {entry.genre && (
                 <span className="text-xs bg-[#faf0d7] text-[#7a5c47] px-2 py-0.5 rounded-full border border-[#e8dcc8]">
                   {entry.genre}

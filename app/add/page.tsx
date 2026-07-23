@@ -4,11 +4,11 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Film, Heart, Camera, Smile } from "lucide-react";
+import { ChevronLeft, ChevronRight, Film, Heart, Camera, Smile, Tv, Plus, X } from "lucide-react";
 import { StarRating } from "@/components/diary/StarRating";
 import { MoodBeforePicker, MoodAfterPicker } from "@/components/diary/MoodPicker";
 import { PhotoUpload } from "@/components/diary/PhotoUpload";
@@ -19,16 +19,24 @@ import type { MoodBefore, MoodAfter } from "@/types";
 
 const AUTHOR_KEY = "album_last_author";
 
+const episodeSchema = z.object({
+  watched_date: z.string().optional(),
+  start_time:   z.string().optional(),
+  end_time:     z.string().optional(),
+});
+
 const schema = z.object({
   added_by:           z.enum(["1", "2"]),
   title:              z.string().min(1, "Movie title is required"),
-  watched_date:       z.string().min(1, "Date is required"),
+  media_type:         z.enum(["movie", "series"]),
+  watched_date:       z.string().optional(),
   poster_url:         z.string().optional(),
   genre:              z.string().optional(),
   runtime:            z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().optional()),
   overview:           z.string().optional(),
   start_time:         z.string().optional(),
   end_time:           z.string().optional(),
+  episodes:           z.array(episodeSchema).optional(),
   your_rating:        z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(10).optional()),
   partner_rating:     z.preprocess((v) => (v === null || v === "" ? undefined : v), z.number().min(1).max(10).optional()),
   favorite_scene:     z.string().optional(),
@@ -101,20 +109,29 @@ function AddEntryForm() {
   const { settings } = useSettings();
 
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const today = new Date().toISOString().split("T")[0];
   const { register, control, setValue, watch, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       added_by: typeof window !== "undefined" && localStorage.getItem(AUTHOR_KEY) === "2" ? "2" : "1",
       title: searchParams.get("title") ?? "",
+      media_type: "movie",
       poster_url: searchParams.get("poster_url") ?? undefined,
       runtime: searchParams.get("runtime") ? Number(searchParams.get("runtime")) : undefined,
-      watched_date: new Date().toISOString().split("T")[0],
+      watched_date: today,
+      episodes: [{ watched_date: today, start_time: "", end_time: "" }],
       location: "Home",
     },
   });
 
+  const { fields: episodeFields, append: appendEpisode, remove: removeEpisode } = useFieldArray({
+    control, name: "episodes",
+  });
+
   const watchedTitle   = watch("title");
   const watchedPoster  = watch("poster_url");
+  const mediaType      = watch("media_type");
+  const watchedEpisodes = watch("episodes");
 
   async function onSubmit(data: FormData) {
     try {
@@ -158,7 +175,13 @@ router.push(`/entries/${entry.id}`);
     }
   }
 
-  const canNext = step === 0 ? !!watchedTitle : true;
+  const canNext = step === 0
+    ? !!watchedTitle && (
+        mediaType === "series"
+          ? (watchedEpisodes?.length ?? 0) > 0 && watchedEpisodes!.every(e => e.watched_date)
+          : !!watch("watched_date")
+      )
+    : true;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
@@ -230,6 +253,34 @@ router.push(`/entries/${entry.id}`);
                 />
               </FormField>
 
+              <FormField label="Type">
+                <Controller
+                  control={control}
+                  name="media_type"
+                  render={({ field }) => (
+                    <div className="flex gap-2">
+                      {([
+                        { value: "movie", label: "Movie", icon: Film },
+                        { value: "series", label: "Series", icon: Tv },
+                      ] as const).map(({ value, label, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => field.onChange(value)}
+                          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                            field.value === value
+                              ? "bg-rose-100 border-rose-300 text-rose-700"
+                              : "bg-white border-[#e8dcc8] text-[#7a5c47] hover:border-rose-200"
+                          }`}
+                        >
+                          <Icon size={15} /> {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                />
+              </FormField>
+
               <FormField label="Movie Title" required>
                 <Input {...register("title")} placeholder="e.g. Interstellar" />
                 {errors.title && <p className="text-xs text-rose-500 mt-1">{errors.title.message}</p>}
@@ -262,7 +313,7 @@ router.push(`/entries/${entry.id}`);
                 <FormField label="Genre">
                   <Input {...register("genre")} placeholder="Drama, Romance…" />
                 </FormField>
-                <FormField label="Runtime (min)">
+                <FormField label={mediaType === "series" ? "Runtime per Episode (min)" : "Runtime (min)"}>
                   <Input
                     type="number"
                     {...register("runtime", { valueAsNumber: true })}
@@ -271,19 +322,56 @@ router.push(`/entries/${entry.id}`);
                 </FormField>
               </div>
 
-              <FormField label="Date Watched" required>
-                <Input type="date" {...register("watched_date")} />
-                {errors.watched_date && <p className="text-xs text-rose-500 mt-1">{errors.watched_date.message}</p>}
-              </FormField>
+              {mediaType === "movie" ? (
+                <>
+                  <FormField label="Date Watched" required>
+                    <Input type="date" {...register("watched_date")} />
+                    {errors.watched_date && <p className="text-xs text-rose-500 mt-1">{errors.watched_date.message}</p>}
+                  </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Start Time">
-                  <Input type="time" {...register("start_time")} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Start Time">
+                      <Input type="time" {...register("start_time")} />
+                    </FormField>
+                    <FormField label="End Time">
+                      <Input type="time" {...register("end_time")} />
+                    </FormField>
+                  </div>
+                </>
+              ) : (
+                <FormField label="Episodes Watched" required hint={`${episodeFields.length} logged`}>
+                  <div className="space-y-3">
+                    {episodeFields.map((field, index) => (
+                      <div key={field.id} className="bg-[#fdf5e8] border border-[#e8dcc8] rounded-xl p-3 space-y-2 relative">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-[#7a5c47]">Episode {index + 1}</p>
+                          {episodeFields.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeEpisode(index)}
+                              className="text-[#b8a090] hover:text-rose-500 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                        <Input type="date" {...register(`episodes.${index}.watched_date` as const)} />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input type="time" {...register(`episodes.${index}.start_time` as const)} placeholder="Start" />
+                          <Input type="time" {...register(`episodes.${index}.end_time` as const)} placeholder="End" />
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => appendEpisode({ watched_date: today, start_time: "", end_time: "" })}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-rose-300 text-rose-500 rounded-xl text-sm font-medium hover:bg-rose-50 transition-colors"
+                    >
+                      <Plus size={14} /> Log Episode {episodeFields.length + 1}
+                    </button>
+                  </div>
                 </FormField>
-                <FormField label="End Time">
-                  <Input type="time" {...register("end_time")} />
-                </FormField>
-              </div>
+              )}
 
               <FormField label="Where did you watch?">
                 <Controller
@@ -429,8 +517,10 @@ router.push(`/entries/${entry.id}`);
             <div className="diary-card p-5 bg-[#fdf5e8]">
               <h3 className="font-display font-semibold text-[#3d2b1f] mb-3">Ready to save? ✨</h3>
               <div className="space-y-1 text-sm text-[#7a5c47]">
-                <p>🎬 <strong>{watchedTitle || "No movie yet"}</strong></p>
-                {watch("watched_date") && <p>📅 {watch("watched_date")}</p>}
+                <p>{mediaType === "series" ? "📺" : "🎬"} <strong>{watchedTitle || "No movie yet"}</strong></p>
+                {mediaType === "series"
+                  ? <p>📅 {episodeFields.length} episode{episodeFields.length !== 1 ? "s" : ""} logged</p>
+                  : watch("watched_date") && <p>📅 {watch("watched_date")}</p>}
                 {watch("your_rating") && <p>⭐ Your rating: {watch("your_rating") as number}/5</p>}
                 {watch("partner_rating") && <p>⭐ Partner: {watch("partner_rating") as number}/5</p>}
                 {watch("location") && <p>📍 {watch("location")}</p>}

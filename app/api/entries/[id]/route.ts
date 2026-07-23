@@ -26,14 +26,17 @@ export async function GET(
   if (isNaN(entryId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
 
   const entry = await db.queryFirst(
-    `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id
+    `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id, m.media_type
      FROM diary_entries de JOIN movies m ON m.id = de.movie_id WHERE de.id = ?`,
     [entryId]
   );
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const photos = await db.query("SELECT * FROM photos WHERE entry_id = ?", [entryId]);
-  return NextResponse.json({ data: { ...entry, photos } });
+  const [photos, episodes] = await Promise.all([
+    db.query("SELECT * FROM photos WHERE entry_id = ?", [entryId]),
+    db.query("SELECT * FROM episodes WHERE entry_id = ? ORDER BY episode_number", [entryId]),
+  ]);
+  return NextResponse.json({ data: { ...entry, photos, episodes } });
 }
 
 const UpdateSchema = z.object({
@@ -56,6 +59,13 @@ const UpdateSchema = z.object({
   poster_url:         z.string().optional(),
   genre:              z.string().optional(),
   runtime:            numOrUndefined,
+  // Series episodes — replaces all episodes for the entry and recomputes
+  // watched_date/start_time/end_time from the latest one when present.
+  episodes: z.array(z.object({
+    watched_date: z.string().min(1),
+    start_time:   z.string().optional(),
+    end_time:     z.string().optional(),
+  })).optional(),
 });
 
 const ENTRY_FIELDS = [
@@ -87,11 +97,12 @@ export async function PUT(
   }
 
   const d = parsed.data as Record<string, unknown>;
+  const episodes = d.episodes as { watched_date: string; start_time?: string; end_time?: string }[] | undefined;
 
   const entryEntries = Object.entries(d).filter(([k, v]) => ENTRY_FIELDS.includes(k) && v !== undefined);
   const movieEntries = Object.entries(d).filter(([k, v]) => MOVIE_FIELDS.includes(k) && v !== undefined);
 
-  if (entryEntries.length === 0 && movieEntries.length === 0) {
+  if (entryEntries.length === 0 && movieEntries.length === 0 && !episodes) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
@@ -113,12 +124,32 @@ export async function PUT(
       }
     }
 
+    if (episodes && episodes.length > 0) {
+      await db.execute("DELETE FROM episodes WHERE entry_id = ?", [entryId]);
+      const sorted = [...episodes].sort((a, b) => a.watched_date.localeCompare(b.watched_date));
+      for (let i = 0; i < sorted.length; i++) {
+        const ep = sorted[i];
+        await db.execute(
+          "INSERT INTO episodes (entry_id, episode_number, watched_date, start_time, end_time) VALUES (?,?,?,?,?)",
+          [entryId, i + 1, ep.watched_date, ep.start_time ?? null, ep.end_time ?? null]
+        );
+      }
+      const latest = sorted[sorted.length - 1];
+      await db.execute(
+        "UPDATE diary_entries SET watched_date = ?, start_time = ?, end_time = ? WHERE id = ?",
+        [latest.watched_date, latest.start_time ?? null, latest.end_time ?? null, entryId]
+      );
+    }
+
     const updated = await db.queryFirst(
-      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id
+      `SELECT de.*, m.title, m.poster_url, m.genre, m.runtime, m.overview, m.tmdb_id, m.media_type
        FROM diary_entries de JOIN movies m ON m.id = de.movie_id WHERE de.id = ?`,
       [entryId]
     );
-    return NextResponse.json({ data: updated });
+    const updatedEpisodes = await db.query(
+      "SELECT * FROM episodes WHERE entry_id = ? ORDER BY episode_number", [entryId]
+    );
+    return NextResponse.json({ data: { ...updated, episodes: updatedEpisodes } });
   } catch (err) {
     console.error("[PUT /api/entries/:id]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
