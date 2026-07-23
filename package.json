@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:migrate": "wrangler d1 migrations apply movie-diary-db",
+    "db:migrate": "wrangler d1 migrations apply movie-diary-db --remote",
     "db:seed": "wrangler d1 execute movie-diary-db --file=database/seed.sql",
     "db:local": "wrangler d1 migrations apply movie-diary-db --local",
     "db:seed:local": "wrangler d1 execute movie-diary-db --local --file=database/seed.sql",
