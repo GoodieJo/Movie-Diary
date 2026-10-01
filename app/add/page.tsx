@@ -521,8 +521,8 @@ router.push(`/entries/${entry.id}`);
                 {mediaType === "series"
                   ? <p>📅 {episodeFields.length} episode{episodeFields.length !== 1 ? "s" : ""} logged</p>
                   : watch("watched_date") && <p>📅 {watch("watched_date")}</p>}
-                {watch("your_rating") && <p>⭐ Your rating: {watch("your_rating") as number}/5</p>}
-                {watch("partner_rating") && <p>⭐ Partner: {watch("partner_rating") as number}/5</p>}
+                {watch("your_rating") && <p>⭐ Your rating: {watch("your_rating") as number}/10</p>}
+                {watch("partner_rating") && <p>⭐ Partner: {watch("partner_rating") as number}/10</p>}
                 {watch("location") && <p>📍 {watch("location")}</p>}
               </div>
             </div>

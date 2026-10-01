@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { DiaryEntry } from "@/types";
@@ -10,14 +11,40 @@ type Grouped = Record<string, Record<string, DiaryEntry[]>>;
 
 export default function TimelinePage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [years, setYears] = useState<{ year: string; count: number }[]>([]);
+  const [year, setYear] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yearLoading, setYearLoading] = useState(false);
 
+  // Which years have entries (newest first); open on the latest one
   useEffect(() => {
-    fetch("/api/entries?sort=newest&limit=200")
-      .then(r => r.json() as Promise<{ items: import("@/types").DiaryEntry[] }>)
-      .then(d => setEntries(d.items ?? []))
-      .finally(() => setLoading(false));
+    fetch("/api/entries?limit=1&withYears=1")
+      .then(r => r.json() as Promise<{ years?: { year: string; count: number }[] }>)
+      .then(d => {
+        const ys = d.years ?? [];
+        setYears(ys);
+        setYear(ys[0]?.year ?? null);
+        if (ys.length === 0) setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
+
+  // Load every entry of the selected year (no cap)
+  useEffect(() => {
+    if (!year) return;
+    let cancelled = false;
+    setYearLoading(true);
+    fetch(`/api/entries?sort=newest&year=${year}&limit=1000`)
+      .then(r => r.json() as Promise<{ items: DiaryEntry[] }>)
+      .then(d => { if (!cancelled) setEntries(d.items ?? []); })
+      .finally(() => { if (!cancelled) { setYearLoading(false); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [year]);
+
+  const changeYear = (y: string) => { setYear(y); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const yearIdx = years.findIndex(y => y.year === year);
+  const newerYear = yearIdx > 0 ? years[yearIdx - 1].year : null;
+  const olderYear = yearIdx >= 0 && yearIdx < years.length - 1 ? years[yearIdx + 1].year : null;
 
   // Group by year → month
   const grouped: Grouped = {};
@@ -29,7 +56,7 @@ export default function TimelinePage() {
     grouped[year][month].push(e);
   }
 
-  const years = Object.keys(grouped).sort((a, b) => Number(b) - Number(a));
+  const groupedYears = Object.keys(grouped).sort((a, b) => Number(b) - Number(a));
   const MONTHS_ORDER = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
   if (loading) {
@@ -56,7 +83,45 @@ export default function TimelinePage() {
         <p className="handwriting text-rose-400 text-lg mt-1">a journey through every movie night 📅</p>
       </motion.div>
 
-      {years.length === 0 ? (
+      {years.length > 0 && (
+        <div className="flex items-center gap-2 mb-8">
+          <button
+            onClick={() => newerYear && changeYear(newerYear)}
+            disabled={!newerYear}
+            aria-label="Newer year"
+            className="p-2 rounded-xl border border-[#e8dcc8] bg-white text-[#7a5c47] hover:bg-rose-50 hover:border-rose-300 transition disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#e8dcc8]"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div className="flex-1 flex gap-1.5 overflow-x-auto justify-center flex-wrap">
+            {years.map(y => (
+              <button
+                key={y.year}
+                onClick={() => changeYear(y.year)}
+                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
+                  y.year === year
+                    ? "bg-rose-100 border-rose-300 text-rose-700 font-medium"
+                    : "bg-white border-[#e8dcc8] text-[#7a5c47]"
+                }`}
+              >
+                {y.year}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => olderYear && changeYear(olderYear)}
+            disabled={!olderYear}
+            aria-label="Older year"
+            className="p-2 rounded-xl border border-[#e8dcc8] bg-white text-[#7a5c47] hover:bg-rose-50 hover:border-rose-300 transition disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-[#e8dcc8]"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {yearLoading ? (
+        <p className="text-center py-16 handwriting text-rose-400 text-lg animate-pulse">turning the page… 💕</p>
+      ) : groupedYears.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-5xl mb-4">📅</p>
           <p className="font-display text-xl text-[#3d2b1f]">No entries yet</p>
@@ -66,7 +131,7 @@ export default function TimelinePage() {
         </div>
       ) : (
         <div className="space-y-10">
-          {years.map((year, yi) => (
+          {groupedYears.map((year, yi) => (
             <motion.div
               key={year}
               initial={{ opacity: 0, y: 20 }}
@@ -84,7 +149,7 @@ export default function TimelinePage() {
 
               {/* Months */}
               <div className="space-y-6">
-                {MONTHS_ORDER
+                {[...MONTHS_ORDER].reverse()
                   .filter(m => grouped[year][m])
                   .map((month, mi) => (
                     <div key={month}>
@@ -124,7 +189,7 @@ export default function TimelinePage() {
                                 </div>
                                 {entry.your_rating && (
                                   <span className="text-xs text-amber-500 font-medium flex-shrink-0">
-                                    {"★".repeat(entry.your_rating)}
+                                    ★ {entry.your_rating}<span className="text-[#b8a090]"> /10</span>
                                   </span>
                                 )}
                               </div>
@@ -137,6 +202,15 @@ export default function TimelinePage() {
               </div>
             </motion.div>
           ))}
+          {olderYear && (
+            <button
+              onClick={() => changeYear(olderYear)}
+              className="w-full py-3 rounded-xl border border-[#e8dcc8] bg-white text-sm text-[#7a5c47] hover:bg-rose-50 hover:border-rose-300 transition flex items-center justify-center gap-1.5"
+            >
+              <span className="handwriting text-rose-400 text-lg">back to {olderYear}</span>
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       )}
     </div>

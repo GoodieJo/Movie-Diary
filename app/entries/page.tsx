@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { DiaryEntry } from "@/types";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEntries } from "@/hooks/use-entries";
@@ -17,8 +18,35 @@ const SORTS  = [
 
 export default function EntriesPage() {
   const { filters, setFilters, resetFilters } = useDiaryStore();
-  const { data, loading } = useEntries(filters);
+  const [page, setPage] = useState(1);
+  const { data, loading } = useEntries(filters, page);
   const [showFilters, setShowFilters] = useState(false);
+  const [items, setItems] = useState<DiaryEntry[]>([]);
+
+  // Reset to the first page whenever filters change
+  useEffect(() => { setPage(1); }, [filters.search, filters.genre, filters.year, filters.sort]);
+
+  // Append each fetched page (page 1 replaces the list)
+  useEffect(() => {
+    if (!data) return;
+    setItems(prev => data.page === 1 ? data.items : [...prev, ...data.items.filter(e => !prev.some(p => p.id === e.id))]);
+  }, [data]);
+
+  const hasMore = !!data && items.length < data.total;
+  const initialLoading = loading && page === 1;
+
+  // Infinite scroll: load the next page when the sentinel nears the viewport
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setPage(p => p + 1); },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loading, items.length]);
 
   const hasActiveFilters = !!(filters.genre || filters.year || filters.search || filters.sort !== "newest");
 
@@ -130,7 +158,7 @@ export default function EntriesPage() {
       )}
 
       {/* Entries */}
-      {loading ? (
+      {initialLoading ? (
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="diary-card p-4 flex gap-4 animate-pulse">
@@ -143,7 +171,7 @@ export default function EntriesPage() {
             </div>
           ))}
         </div>
-      ) : data?.items.length === 0 ? (
+      ) : data?.total === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
           <div className="text-5xl mb-4">📖</div>
           <p className="font-display text-xl text-[#3d2b1f]">
@@ -163,9 +191,14 @@ export default function EntriesPage() {
         </motion.div>
       ) : (
         <div className="space-y-3">
-          {data?.items.map((entry, i) => (
-            <EntryCard key={entry.id} entry={entry} index={i} />
+          {items.map((entry, i) => (
+            <EntryCard key={entry.id} entry={entry} index={i % 20} />
           ))}
+          {hasMore && (
+            <div ref={sentinelRef} className="py-6 text-center handwriting text-rose-400 text-lg animate-pulse">
+              turning the page… 💕
+            </div>
+          )}
         </div>
       )}
     </div>

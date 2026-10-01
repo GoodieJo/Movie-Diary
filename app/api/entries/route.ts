@@ -83,11 +83,19 @@ export async function GET(request: NextRequest) {
 
   if (entries.length > 0) {
     const ids = entries.map(e => e.id as number);
-    const placeholders = ids.map(() => "?").join(",");
-    const [photos, episodes] = await Promise.all([
-      db.query(`SELECT * FROM photos WHERE entry_id IN (${placeholders})`, ids),
-      db.query(`SELECT * FROM episodes WHERE entry_id IN (${placeholders}) ORDER BY episode_number`, ids),
-    ]);
+    // D1 caps bound parameters per query (100), so look up related rows in chunks
+    const photos: Awaited<ReturnType<typeof db.query>> = [];
+    const episodes: Awaited<ReturnType<typeof db.query>> = [];
+    for (let i = 0; i < ids.length; i += 90) {
+      const chunk = ids.slice(i, i + 90);
+      const placeholders = chunk.map(() => "?").join(",");
+      const [p, ep] = await Promise.all([
+        db.query(`SELECT * FROM photos WHERE entry_id IN (${placeholders})`, chunk),
+        db.query(`SELECT * FROM episodes WHERE entry_id IN (${placeholders}) ORDER BY episode_number`, chunk),
+      ]);
+      photos.push(...p);
+      episodes.push(...ep);
+    }
     const photoMap: Record<number, unknown[]> = {};
     for (const p of photos) {
       const eid = p.entry_id as number;
@@ -106,11 +114,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Optional: per-year totals (newest first) for the timeline's year pager
+  let years: { year: string; count: number }[] | undefined;
+  if (searchParams.get("withYears")) {
+    const yearRows = await db.query<{ year: string; cnt: number }>(
+      "SELECT strftime('%Y', watched_date) as year, COUNT(*) as cnt FROM diary_entries GROUP BY year ORDER BY year DESC"
+    );
+    years = yearRows.map(r => ({ year: String(r.year), count: Number(r.cnt) }));
+  }
+
   return NextResponse.json({
     items: entries,
     total: countRow?.cnt ?? 0,
     page,
     pageSize: limit,
+    ...(years ? { years } : {}),
   });
 }
 

@@ -16,6 +16,9 @@ const ACHIEVEMENTS = [
   { id: "quarter", title: "Cinephiles",        emoji: "🏆",  threshold: 25,  desc: "Watch 25 movies together" },
   { id: "fifty",   title: "Movie Marathoners", emoji: "🌟",  threshold: 50,  desc: "Watch 50 movies together" },
   { id: "century", title: "Silver Screen Duo", emoji: "👑",  threshold: 100, desc: "Watch 100 movies together" },
+  { id: "popcorn", title: "Popcorn Royalty",     emoji: "🍿",  threshold: 150, desc: "Watch 150 movies together" },
+  { id: "carpet",  title: "Red Carpet Regulars", emoji: "🎭",  threshold: 200, desc: "Watch 200 movies together" },
+  { id: "fame",    title: "Hall of Fame Lovers", emoji: "💎",  threshold: 250, desc: "Watch 250 movies together" },
 ];
 
 
@@ -124,7 +127,7 @@ const ratingsDist = Array.from({ length: 10 }, (_, i) => i + 1).map(s => ({
           {stats.highest_rated && (
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-[#7a5c47]">⭐ Top rated</span>
-              <span className="font-medium text-[#3d2b1f] text-sm">{stats.highest_rated.title} ({stats.highest_rated.rating}/5)</span>
+              <span className="font-medium text-[#3d2b1f] text-sm">{stats.highest_rated.title} ({stats.highest_rated.rating}/10)</span>
             </div>
           )}
         </motion.div>
