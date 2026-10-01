@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db-adapter";
 export const runtime = "edge";
 
+const MILESTONES = [1, 10, 25, 50, 100, 150, 200, 250];
+
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_: NextRequest) {
@@ -14,7 +16,7 @@ export async function GET(_: NextRequest) {
 
   const [
     total, thisYearCount, thisMonthCount, avgRating,
-    genreRows, monthRows, ratingsRows, longestMovie, highestRated,
+    genreRows, monthRows, ratingsRows, longestMovie, highestRated, dateRows,
   ] = await Promise.all([
     db.queryFirst<{ cnt: number }>("SELECT COUNT(*) as cnt FROM diary_entries"),
     db.queryFirst<{ cnt: number }>("SELECT COUNT(*) as cnt FROM diary_entries WHERE strftime('%Y', watched_date) = ?", [thisYear]),
@@ -25,7 +27,15 @@ export async function GET(_: NextRequest) {
     db.query<{ stars: number; cnt: number }>("SELECT CAST(ROUND((COALESCE(your_rating,0)+COALESCE(partner_rating,0))/2.0) AS INTEGER) as stars, COUNT(*) as cnt FROM diary_entries WHERE your_rating IS NOT NULL GROUP BY stars"),
     db.queryFirst<{ title: string; runtime: number }>("SELECT m.title, m.runtime FROM diary_entries de JOIN movies m ON m.id = de.movie_id WHERE m.runtime IS NOT NULL ORDER BY m.runtime DESC LIMIT 1"),
     db.queryFirst<{ title: string; rating: number }>("SELECT m.title, ROUND((COALESCE(de.your_rating,0)+COALESCE(de.partner_rating,0))/2.0,1) as rating FROM diary_entries de JOIN movies m ON m.id = de.movie_id WHERE de.your_rating IS NOT NULL ORDER BY rating DESC LIMIT 1"),
+    db.query<{ watched_date: string }>("SELECT watched_date FROM diary_entries ORDER BY watched_date ASC, id ASC"),
   ]);
+
+  // Date the Nth movie was watched = date milestone N was unlocked
+  const milestoneDates: Record<number, string> = {};
+  for (const n of MILESTONES) {
+    const row = dateRows[n - 1];
+    if (row) milestoneDates[n] = String(row.watched_date).slice(0, 10);
+  }
 
   const byGenre = genreRows.map(r => ({ genre: r.genre, count: Number(r.cnt) }));
 
@@ -39,6 +49,7 @@ export async function GET(_: NextRequest) {
     highest_rated:      highestRated ?? null,
     by_genre:           byGenre,
     by_month:           monthRows.map(r => ({ month: r.month, count: Number(r.cnt) })).reverse(),
+    milestone_dates:    milestoneDates,
     ratings_distribution: ratingsRows.map(r => ({ stars: Math.round(Number(r.stars)), count: Number(r.cnt) })),
   });
 }

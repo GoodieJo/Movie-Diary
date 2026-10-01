@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import type { DiaryStats } from "@/types";
 import Link from "next/link";
+import { formatShortDate } from "@/lib/utils";
 import { Film, Calendar, Star, TrendingUp } from "lucide-react";
 
 const ACHIEVEMENTS = [
@@ -204,7 +205,16 @@ const ratingsDist = Array.from({ length: 10 }, (_, i) => i + 1).map(s => ({
                 <div className="text-3xl mb-2">{a.emoji}</div>
                 <p className="font-semibold text-sm text-[#3d2b1f]">{a.title}</p>
                 <p className="text-xs text-[#9e7a60] mt-1">{a.desc}</p>
-                {unlocked && <p className="text-xs text-rose-400 font-medium mt-2">✓ Unlocked!</p>}
+                {unlocked && (
+                  <div className="mt-2">
+                    <p className="text-xs text-rose-400 font-medium">✓ Unlocked!</p>
+                    {stats.milestone_dates?.[a.threshold] && (
+                      <p className="handwriting text-[#9e7a60] text-sm mt-0.5">
+                        {formatShortDate(stats.milestone_dates[a.threshold])}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {!unlocked && (
                   <p className="text-xs text-[#b8a090] mt-2">
                     {a.threshold - stats.total_movies} more to go

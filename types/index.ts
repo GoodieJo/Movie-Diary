@@ -129,6 +129,7 @@ export interface DiaryStats {
   by_genre: { genre: string; count: number }[];
   by_month: { month: string; count: number }[];
   ratings_distribution: { stars: number; count: number }[];
+  milestone_dates?: Record<number, string>;
 }
 
 // Achievement type
